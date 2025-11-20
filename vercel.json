@@ -1,10 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite",
-  "functions": {
-    "api/**": {
-      "runtime": "vercel-go@2.0.0"
-    }
-  }
+  "framework": "vite"
 }
