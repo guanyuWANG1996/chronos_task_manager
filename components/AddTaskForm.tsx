@@ -1,0 +1,93 @@
+import React, { useState } from 'react';
+import { Plus, X } from 'lucide-react';
+import { Group } from '../types';
+import { cn } from '../lib/utils';
+
+interface AddTaskFormProps {
+  selectedDate: string;
+  groups: Group[];
+  onAdd: (title: string, description: string, groupId: string) => void;
+  onCancel: () => void;
+}
+
+export const AddTaskForm: React.FC<AddTaskFormProps> = ({ selectedDate, groups, onAdd, onCancel }) => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [groupId, setGroupId] = useState(groups[0].id);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    onAdd(title, description, groupId);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-[#18181b] border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in zoom-in-95 duration-300">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-lg font-semibold text-white">New Task</h3>
+            <button onClick={onCancel} className="text-zinc-500 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Task Title</label>
+              <input
+                type="text"
+                autoFocus
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="What needs to be done?"
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Description (Optional)</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                placeholder="Add some details..."
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Group</label>
+              <div className="grid grid-cols-2 gap-2">
+                {groups.map(group => (
+                  <button
+                    key={group.id}
+                    type="button"
+                    onClick={() => setGroupId(group.id)}
+                    className={cn(
+                      "px-3 py-2 rounded-lg text-sm font-medium transition-all border",
+                      groupId === group.id
+                        ? `bg-zinc-800 border-zinc-600 text-white`
+                        : "bg-transparent border-zinc-800 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"
+                    )}
+                  >
+                    {group.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-xl transition-all active:scale-[0.98]"
+              >
+                Create Task
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
