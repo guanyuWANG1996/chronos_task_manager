@@ -13,8 +13,8 @@ import { getTodos, createTodo, toggleTodo, deleteTodo as apiDeleteTodo, getCalen
 const App: React.FC = () => {
   // Initialize with today's date
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
-  const [allMonthTasks, setAllMonthTasks] = useState<Task[]>(INITIAL_TASKS);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [allMonthTasks, setAllMonthTasks] = useState<Task[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [loadingAiId, setLoadingAiId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
