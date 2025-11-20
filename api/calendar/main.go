@@ -17,31 +17,31 @@ type daySummary struct {
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "method not allowed"})
-		return
-	}
-	token, err := auth.FromAuthHeader(r.Header.Get("Authorization"))
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "unauthorized"})
-		return
-	}
-	c, err := auth.ParseToken(token)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "unauthorized"})
-		return
-	}
+    if r.Method != http.MethodGet {
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "method not allowed"})
+        return
+    }
+    token, err := auth.FromAuthHeader(r.Header.Get("Authorization"))
+    if err != nil {
+        w.WriteHeader(http.StatusUnauthorized)
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "unauthorized"})
+        return
+    }
+    c, err := auth.ParseToken(token)
+    if err != nil {
+        w.WriteHeader(http.StatusUnauthorized)
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "unauthorized"})
+        return
+    }
 	month := r.URL.Query().Get("month")
 	ctx := context.Background()
-	pool, err := db.GetPool(ctx)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "db error"})
-		return
-	}
+    pool, err := db.GetPool(ctx)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"})
+        return
+    }
 	rows, err := pool.Query(ctx, `
         SELECT to_char(date,'YYYY-MM-DD') as d,
                SUM(CASE WHEN completed THEN 1 ELSE 0 END) AS completed,
@@ -50,11 +50,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         WHERE user_id=$1 AND to_char(date,'YYYY-MM')=$2
         GROUP BY d
     `, c.UserID, month)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "db error"})
-		return
-	}
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"})
+        return
+    }
 	defer rows.Close()
 	var res []daySummary
 	for rows.Next() {
@@ -67,6 +67,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		d.HasTasks = d.Completed+d.Pending > 0
 		res = append(res, d)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"ok": true, "data": res})
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "data": res})
 }
