@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
     "context"
@@ -112,5 +112,3 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "method not allowed"})
     }
 }
-
-func main() {}

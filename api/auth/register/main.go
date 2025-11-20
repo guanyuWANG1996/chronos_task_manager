@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
     "context"
@@ -73,5 +73,3 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(jsonResp{OK: true, Data: map[string]any{"id": id, "email": req.Email}})
 }
-
-func main() {}
