@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [loadingAiId, setLoadingAiId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // Filter tasks for the selected date
   const dailyTasks = React.useMemo(() => {
@@ -125,6 +126,13 @@ const App: React.FC = () => {
     localStorage.setItem('chronos_email', em);
   };
 
+  const logout = () => {
+    localStorage.removeItem('chronos_token');
+    localStorage.removeItem('chronos_email');
+    setToken(null);
+    setEmail(null);
+  };
+
   // Stats for Progress Bar
   const total = dailyTasks.length;
   const completed = dailyTasks.filter(t => t.completed).length;
@@ -146,11 +154,20 @@ const App: React.FC = () => {
             <h1 className="font-bold text-lg tracking-tight">Chronos</h1>
           </div>
           
-          <div className="flex items-center gap-4">
-            <button className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
-              Today
-            </button>
-             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500"></div>
+          <div className="flex items-center gap-4 relative">
+            <span className="text-sm text-zinc-400 hidden sm:block">
+              {(email || '').split('@')[0] || 'Guest'}
+            </span>
+            <button onClick={() => setProfileOpen(v => !v)} className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500"></button>
+            {profileOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)}></div>
+                <div className="absolute right-0 top-10 z-20 w-40 bg-[#18181b] border border-zinc-800 rounded-xl shadow-xl py-2">
+                  <div className="px-3 py-2 text-xs text-zinc-400">{email || ''}</div>
+                  <button onClick={() => { setProfileOpen(false); logout(); }} className="w-full text-left px-3 py-2 text-sm text-white hover:bg-zinc-800">Log out</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
