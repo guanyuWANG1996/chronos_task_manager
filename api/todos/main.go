@@ -5,6 +5,7 @@ import (
     "encoding/json"
     "net/http"
     "strconv"
+    "log"
 
     "chronos-task-manager/pkg/auth"
     "chronos-task-manager/pkg/db"
@@ -20,6 +21,7 @@ type todo struct {
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
+    log.Printf("todos Handler invoked: method=%s path=%s", r.Method, r.URL.Path)
     token, err := auth.FromAuthHeader(r.Header.Get("Authorization"))
     if err != nil {
         w.WriteHeader(http.StatusUnauthorized)
@@ -35,6 +37,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     ctx := context.Background()
     pool, err := db.GetPool(ctx)
     if err != nil {
+        log.Printf("todos GetPool error: %v", err)
         w.WriteHeader(http.StatusInternalServerError)
         json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"})
         return

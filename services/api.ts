@@ -7,7 +7,7 @@ export interface AuthResult {
 const json = (resp: Response) => resp.json();
 
 export async function register(email: string, password: string) {
-  const res = await fetch('/api/auth/register', {
+  const res = await fetch('/api/auth/register/main', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
@@ -19,7 +19,7 @@ export async function register(email: string, password: string) {
 }
 
 export async function login(email: string, password: string): Promise<AuthResult> {
-  const res = await fetch('/api/auth/login', {
+  const res = await fetch('/api/auth/login/main', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
@@ -35,7 +35,7 @@ function authHeaders(token: string) {
 }
 
 export async function getTodos(date: string, token: string) {
-  const res = await fetch(`/api/todos?date=${encodeURIComponent(date)}`, {
+  const res = await fetch(`/api/todos/main?date=${encodeURIComponent(date)}`, {
     headers: authHeaders(token)
   });
   let data: any = null;
@@ -45,7 +45,7 @@ export async function getTodos(date: string, token: string) {
 }
 
 export async function createTodo(payload: { title: string; description?: string; date: string; groupId: string }, token: string) {
-  const res = await fetch('/api/todos', {
+  const res = await fetch('/api/todos/main', {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(payload)
@@ -57,7 +57,7 @@ export async function createTodo(payload: { title: string; description?: string;
 }
 
 export async function toggleTodo(id: string, token: string) {
-  const res = await fetch('/api/todos', {
+  const res = await fetch('/api/todos/main', {
     method: 'PATCH',
     headers: authHeaders(token),
     body: JSON.stringify({ id })
@@ -69,7 +69,7 @@ export async function toggleTodo(id: string, token: string) {
 }
 
 export async function deleteTodo(id: string, token: string) {
-  const res = await fetch(`/api/todos?id=${encodeURIComponent(id)}`, {
+  const res = await fetch(`/api/todos/main?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: authHeaders(token)
   });
@@ -80,7 +80,7 @@ export async function deleteTodo(id: string, token: string) {
 }
 
 export async function getCalendar(month: string, token: string) {
-  const res = await fetch(`/api/calendar?month=${encodeURIComponent(month)}`, {
+  const res = await fetch(`/api/calendar/main?month=${encodeURIComponent(month)}`, {
     headers: authHeaders(token)
   });
   let data: any = null;

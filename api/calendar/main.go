@@ -4,6 +4,7 @@ import (
     "context"
     "encoding/json"
     "net/http"
+    "log"
 
     "chronos-task-manager/pkg/auth"
     "chronos-task-manager/pkg/db"
@@ -17,6 +18,7 @@ type daySummary struct {
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
+    log.Printf("calendar Handler invoked: method=%s path=%s", r.Method, r.URL.Path)
     if r.Method != http.MethodGet {
         w.WriteHeader(http.StatusMethodNotAllowed)
         json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "method not allowed"})
