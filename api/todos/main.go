@@ -6,8 +6,8 @@ import (
     "net/http"
     "strconv"
 
-    "chronos-task-manager/internal/auth"
-    "chronos-task-manager/internal/db"
+    "chronos-task-manager/pkg/auth"
+    "chronos-task-manager/pkg/db"
 )
 
 type todo struct {

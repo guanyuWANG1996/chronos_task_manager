@@ -8,7 +8,7 @@ import (
 
     "golang.org/x/crypto/bcrypt"
 
-    "chronos-task-manager/internal/db"
+    "chronos-task-manager/pkg/db"
 )
 
 type registerReq struct {
