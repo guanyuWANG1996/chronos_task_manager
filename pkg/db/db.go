@@ -20,11 +20,24 @@ func GetPool(ctx context.Context) (*pgxpool.Pool, error) {
     if pool != nil {
         return pool, nil
     }
+    candidates := []string{
+        "POSTGRES_URL",
+        "DATABASE_URL",
+        "POSTGRES_URL_NON_POOLING",
+        "DATABASE_URL_UNPOOLED",
+        "POSTGRES_PRISMA_URL",
+        "POSTGRES_URL_NO_SSL",
+    }
+    for _, k := range candidates {
+        log.Printf("db env %s present=%t", k, os.Getenv(k) != "")
+    }
     url := firstNonEmpty(
         os.Getenv("POSTGRES_URL"),
         os.Getenv("DATABASE_URL"),
         os.Getenv("POSTGRES_URL_NON_POOLING"),
         os.Getenv("DATABASE_URL_UNPOOLED"),
+        os.Getenv("POSTGRES_PRISMA_URL"),
+        os.Getenv("POSTGRES_URL_NO_SSL"),
     )
     if url == "" {
         return nil, errors.New("database url not set: expect POSTGRES_URL or DATABASE_URL")
@@ -39,6 +52,10 @@ func GetPool(ctx context.Context) (*pgxpool.Pool, error) {
         chosen = "POSTGRES_URL_NON_POOLING"
     case os.Getenv("DATABASE_URL_UNPOOLED") != "":
         chosen = "DATABASE_URL_UNPOOLED"
+    case os.Getenv("POSTGRES_PRISMA_URL") != "":
+        chosen = "POSTGRES_PRISMA_URL"
+    case os.Getenv("POSTGRES_URL_NO_SSL") != "":
+        chosen = "POSTGRES_URL_NO_SSL"
     }
     log.Printf("db GetPool selecting url from %s", chosen)
     if !strings.Contains(url, "sslmode=") {
