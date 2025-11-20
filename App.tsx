@@ -1,19 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar } from './components/Calendar';
 import { TaskList } from './components/TaskList';
 import { AddTaskForm } from './components/AddTaskForm';
+import { AuthForm } from './components/AuthForm';
 import { GROUPS, INITIAL_TASKS } from './constants';
 import { Task } from './types';
 import { Plus, Calendar as CalendarIcon, Layout, Github } from 'lucide-react';
 import { formatDate } from './lib/utils';
 import { generateSubtasks } from './services/geminiService';
+import { getTodos, createTodo, toggleTodo, deleteTodo as apiDeleteTodo, getCalendar } from './services/api';
 
 const App: React.FC = () => {
   // Initialize with today's date
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+  const [allMonthTasks, setAllMonthTasks] = useState<Task[]>(INITIAL_TASKS);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [loadingAiId, setLoadingAiId] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
 
   // Filter tasks for the selected date
   const dailyTasks = React.useMemo(() => {
@@ -21,28 +26,34 @@ const App: React.FC = () => {
   }, [tasks, selectedDate]);
 
   // Handlers
-  const addTask = (title: string, description: string, groupId: string) => {
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title,
-      description,
-      date: selectedDate,
-      groupId,
-      completed: false,
-      subtasks: []
-    };
-    setTasks(prev => [...prev, newTask]);
-    setIsAddModalOpen(false);
+  const addTask = async (title: string, description: string, groupId: string) => {
+    if (!token) return;
+    const res = await createTodo({ title, description, date: selectedDate, groupId }, token);
+    if (res.ok) {
+      const t = res.data as any;
+      const newTask: Task = { id: String(t.id), title: t.title, description: t.description, date: t.date, groupId: t.groupId, completed: t.completed, subtasks: [] };
+      setTasks(prev => [newTask, ...prev]);
+      setAllMonthTasks(prev => [newTask, ...prev]);
+      setIsAddModalOpen(false);
+    }
   };
 
-  const toggleTask = (id: string) => {
-    setTasks(prev => prev.map(t => 
-      t.id === id ? { ...t, completed: !t.completed } : t
-    ));
+  const toggleTask = async (id: string) => {
+    if (!token) return;
+    const res = await toggleTodo(id, token);
+    if (res.ok) {
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+      setAllMonthTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+    }
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+  const deleteTask = async (id: string) => {
+    if (!token) return;
+    const res = await apiDeleteTodo(id, token);
+    if (res.ok) {
+      setTasks(prev => prev.filter(t => t.id !== id));
+      setAllMonthTasks(prev => prev.filter(t => t.id !== id));
+    }
   };
 
   const handleAiSubtasks = async (taskId: string) => {
@@ -69,11 +80,59 @@ const App: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const saved = localStorage.getItem('chronos_token');
+    const savedEmail = localStorage.getItem('chronos_email');
+    if (saved) {
+      setToken(saved);
+      setEmail(savedEmail);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    (async () => {
+      const tasksRes = await getTodos(selectedDate, token);
+      if (tasksRes.ok) {
+        const list = (tasksRes.data as any[]).map(t => ({ id: String(t.id), title: t.title, description: t.description, date: t.date, groupId: t.groupId, completed: t.completed } as Task));
+        setTasks(list);
+      }
+    })();
+  }, [selectedDate, token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const month = selectedDate.slice(0, 7);
+    (async () => {
+      const res = await getCalendar(month, token);
+      if (res.ok) {
+        const days = (res.data as any[]) as { date: string; hasTasks: boolean; pending: number; completed: number }[];
+        const placeholders: Task[] = [];
+        for (const d of days) {
+          if (d.hasTasks) {
+            placeholders.push({ id: `${d.date}-placeholder`, title: '', date: d.date, groupId: 'personal', completed: d.completed > d.pending });
+          }
+        }
+        setAllMonthTasks(placeholders);
+      }
+    })();
+  }, [token, selectedDate]);
+
+  const onAuthenticated = (tok: string, em: string) => {
+    setToken(tok);
+    setEmail(em);
+    localStorage.setItem('chronos_token', tok);
+    localStorage.setItem('chronos_email', em);
+  };
+
   // Stats for Progress Bar
   const total = dailyTasks.length;
   const completed = dailyTasks.filter(t => t.completed).length;
   const progress = total === 0 ? 0 : (completed / total) * 100;
 
+  if (!token) {
+    return <AuthForm onAuthenticated={onAuthenticated} />;
+  }
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30">
       
@@ -104,7 +163,7 @@ const App: React.FC = () => {
             <Calendar 
               selectedDate={selectedDate} 
               onSelectDate={setSelectedDate} 
-              tasks={tasks}
+              tasks={allMonthTasks}
             />
             
             {/* Mini Stats Card */}
