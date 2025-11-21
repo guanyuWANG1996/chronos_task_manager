@@ -4,6 +4,7 @@ import { TaskList } from './components/TaskList';
 import { AddTaskForm } from './components/AddTaskForm';
 import { AuthForm } from './components/AuthForm';
 import { TaskDetailModal } from './components/TaskDetailModal';
+import { Toast } from './components/Toast';
 import { GROUPS, INITIAL_TASKS } from './constants';
 import { Task } from './types';
 import { Plus, Calendar as CalendarIcon, Layout, Github } from 'lucide-react';
@@ -18,6 +19,7 @@ const App: React.FC = () => {
   const [allMonthTasks, setAllMonthTasks] = useState<Task[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [toast, setToast] = useState<string>('');
   const [loadingAiId, setLoadingAiId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
@@ -38,6 +40,8 @@ const App: React.FC = () => {
       setTasks(prev => [newTask, ...prev]);
       setAllMonthTasks(prev => [newTask, ...prev]);
       setIsAddModalOpen(false);
+    } else {
+      setToast(res.error || 'Create task failed');
     }
   };
 
@@ -47,7 +51,7 @@ const App: React.FC = () => {
     if (res.ok) {
       setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
       setAllMonthTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-    }
+    } else { setToast(res.error || 'Toggle task failed'); }
   };
 
   const deleteTask = async (id: string) => {
@@ -56,7 +60,7 @@ const App: React.FC = () => {
     if (res.ok) {
       setTasks(prev => prev.filter(t => t.id !== id));
       setAllMonthTasks(prev => prev.filter(t => t.id !== id));
-    }
+    } else { setToast(res.error || 'Delete task failed'); }
   };
 
   const handleAiSubtasks = async (taskId: string) => {
@@ -88,7 +92,7 @@ const App: React.FC = () => {
     const res = await toggleSubtask(subtaskId, token);
     if (res.ok) {
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: (t.subtasks||[]).map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st) } : t));
-    }
+    } else { setToast(res.error || 'Toggle subtask failed'); }
   };
 
   const addSubtaskLocal = async (taskId: string, title: string) => {
@@ -97,7 +101,7 @@ const App: React.FC = () => {
     if (res.ok) {
       const st = res.data;
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: [...(t.subtasks||[]), { id: String(st.data.id), title: st.data.title, completed: false }] } : t));
-    }
+    } else { setToast(res.error || 'Add subtask failed'); }
   };
 
   useEffect(() => {
@@ -269,9 +273,10 @@ const App: React.FC = () => {
         <TaskDetailModal 
           task={editingTask}
           onClose={() => setEditingTask(null)}
-          onSave={async (u) => { if (!token) return; const res = await updateTodo({ id: editingTask.id, title: u.title, description: u.description, time: u.time }, token); if (res.ok) { setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...u } as Task : t)); setEditingTask(null); } }}
+          onSave={async (u) => { if (!token) return; const res = await updateTodo({ id: editingTask.id, title: u.title, description: u.description, time: u.time }, token); if (res.ok) { setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...u } as Task : t)); setEditingTask(null); } else { setToast(res.error || 'Update task failed'); } }}
         />
       )}
+      {toast && <Toast message={toast} onClose={() => setToast('')} />}
     </div>
   );
 };

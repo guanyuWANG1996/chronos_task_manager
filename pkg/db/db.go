@@ -82,6 +82,13 @@ func GetPool(ctx context.Context) (*pgxpool.Pool, error) {
         log.Printf("db initSchema error: %v", err)
         return nil, err
     }
+    if err := migrateSchema(ctx, p); err != nil {
+        // Try non-pooling on migration errors
+        log.Printf("db migrateSchema error: %v", err)
+        if err2 := migrateSchemaNonPooling(ctx); err2 != nil {
+            log.Printf("db migrateSchema non-pooling error: %v", err2)
+        }
+    }
     pool = p
     log.Printf("db pool initialized")
     return pool, nil
@@ -156,6 +163,25 @@ func initSchema(ctx context.Context, p *pgxpool.Pool) error {
     return nil
 }
 
+// Ensure new columns exist when table already created previously
+func migrateSchema(ctx context.Context, p *pgxpool.Pool) error {
+    // Add time column if not exists
+    if _, err := p.Exec(ctx, `ALTER TABLE IF EXISTS todos ADD COLUMN IF NOT EXISTS time TEXT`); err != nil {
+        return err
+    }
+    // Create subtasks if missing
+    if _, err := p.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS subtasks (
+            id BIGSERIAL PRIMARY KEY,
+            todo_id BIGINT NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            completed BOOLEAN NOT NULL DEFAULT FALSE
+        )`); err != nil {
+        return err
+    }
+    return nil
+}
+
 func initSchemaNonPooling(ctx context.Context) error {
 	url := firstNonEmpty(
 		os.Getenv("POSTGRES_URL_NON_POOLING"),
@@ -213,5 +239,30 @@ func initSchemaNonPooling(ctx context.Context) error {
     `); err != nil {
         return err
     }
+    return nil
+}
+
+func migrateSchemaNonPooling(ctx context.Context) error {
+    url := firstNonEmpty(
+        os.Getenv("POSTGRES_URL_NON_POOLING"),
+        os.Getenv("DATABASE_URL_UNPOOLED"),
+        os.Getenv("POSTGRES_URL"),
+        os.Getenv("DATABASE_URL"),
+    )
+    if url == "" { return nil }
+    if !strings.Contains(url, "sslmode=") {
+        if strings.Contains(url, "?") { url += "&sslmode=require" } else { url += "?sslmode=require" }
+    }
+    conn, err := pgx.Connect(ctx, url)
+    if err != nil { return err }
+    defer conn.Close(ctx)
+    if _, err := conn.Exec(ctx, `ALTER TABLE IF EXISTS todos ADD COLUMN IF NOT EXISTS time TEXT`); err != nil { return err }
+    if _, err := conn.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS subtasks (
+            id BIGSERIAL PRIMARY KEY,
+            todo_id BIGINT NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            completed BOOLEAN NOT NULL DEFAULT FALSE
+        )`); err != nil { return err }
     return nil
 }

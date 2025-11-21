@@ -64,7 +64,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onAuthenticated }) => {
             className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           {error && <div className="text-red-400 text-sm">{error}</div>}
-          {typeof window !== 'undefined' && location.hostname === 'localhost' && (
+          {typeof window !== 'undefined' && location.hostname === 'localhost' && !((import.meta as any).env && (import.meta as any).env.DEV) && (
             <div className="text-xs text-zinc-400">
               本地预览不提供 /api/** 后端，请部署到 Vercel 并配置数据库后再试。
             </div>
