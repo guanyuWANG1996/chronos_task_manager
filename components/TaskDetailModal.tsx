@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Task } from '../types';
 import { TimePicker } from './TimePicker';
 import { cn } from '../lib/utils';
-import { X, Type, FileText, Clock, ListChecks } from 'lucide-react';
+import { X, Type, FileText, Clock, ListChecks, Check } from 'lucide-react';
 import { Group } from '../types';
 
 interface TaskDetailModalProps {
@@ -51,7 +51,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, groups, 
             <div className="space-y-2">
               {(task.subtasks || []).map(st => (
                 <div key={st.id} className="flex items-center gap-2 text-xs text-zinc-400">
-                  <button type="button" onClick={() => onToggleSubtask && onToggleSubtask(st.id)} className={cn("w-4 h-4 rounded-full border", st.completed ? "bg-emerald-500 border-emerald-500" : "border-zinc-600")}></button>
+                  <button type="button" onClick={() => onToggleSubtask && onToggleSubtask(st.id)} className={cn("w-4 h-4 rounded-full border flex items-center justify-center", st.completed ? "bg-emerald-500 border-emerald-500 text-white" : "border-zinc-600")}>{st.completed && <Check className="w-3 h-3" />}</button>
                   <span className={cn(st.completed && "line-through text-zinc-500")}>{st.title}</span>
                 </div>
               ))}

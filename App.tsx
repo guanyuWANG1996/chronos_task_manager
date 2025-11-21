@@ -9,7 +9,9 @@ import { GROUPS, INITIAL_TASKS } from './constants';
 import { Task } from './types';
 import { Plus, Calendar as CalendarIcon, Layout, Github } from 'lucide-react';
 import { formatDate, todayYMD } from './lib/utils';
-import { generateSubtasks } from './services/geminiService';
+// remove ai parse; use streaming chat
+import { SmartTaskInput } from './components/SmartTaskInput';
+import { AIResponse } from './components/AIResponse';
 import { getTodos, createTodo, toggleTodo, deleteTodo as apiDeleteTodo, getCalendar, toggleSubtask, updateTodo, addSubtask } from './services/api';
 
 const App: React.FC = () => {
@@ -21,6 +23,9 @@ const App: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [toast, setToast] = useState<string>('');
   const [loadingAiId, setLoadingAiId] = useState<string | null>(null);
+  const [aiOutput, setAiOutput] = useState<string>('');
+  const [aiStreaming, setAiStreaming] = useState<boolean>(false);
+  const [smartCreating, setSmartCreating] = useState<boolean>(false);
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -63,29 +68,16 @@ const App: React.FC = () => {
     } else { setToast(res.error || 'Delete task failed'); }
   };
 
-  const handleAiSubtasks = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    setLoadingAiId(taskId);
-    
+  const askAi = async (text: string) => {
+    setAiStreaming(true);
+    setAiOutput('');
     try {
-      const subtasksData = await generateSubtasks(task.title);
-      const newSubtasks = subtasksData.map((st, idx) => ({
-        id: `${taskId}-sub-${idx}`,
-        title: st.title,
-        completed: false
-      }));
-
-      setTasks(prev => prev.map(t => 
-        t.id === taskId ? { ...t, subtasks: [...(t.subtasks || []), ...newSubtasks] } : t
-      ));
-    } catch (e) {
-      console.error("Failed to generate subtasks", e);
+      setAiOutput('Hello New World');
     } finally {
-      setLoadingAiId(null);
+      setAiStreaming(false);
     }
   };
+  const cancelAi = () => { /* no-op after removing stream */ }
 
   const toggleSubtaskLocal = async (taskId: string, subtaskId: string) => {
     if (!token) return;
@@ -125,7 +117,16 @@ const App: React.FC = () => {
     (async () => {
       const tasksRes = await getTodos(selectedDate, token);
       if (tasksRes.ok) {
-        const list = (tasksRes.data as any[]).map(t => ({ id: String(t.id), title: t.title, description: t.description, date: t.date, groupId: t.groupId, completed: t.completed } as Task));
+        const list = (tasksRes.data as any[]).map(t => ({ 
+          id: String(t.id), 
+          title: t.title, 
+          description: t.description, 
+          date: t.date, 
+          time: t.time,
+          groupId: t.groupId, 
+          completed: t.completed,
+          subtasks: (t.subtasks || []).map((st:any) => ({ id: String(st.id), title: st.title, completed: !!st.completed }))
+        } as Task));
         setTasks(list);
       }
     })();
@@ -203,6 +204,8 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
+        <SmartTaskInput onSubmit={askAi} loading={aiStreaming} />
+        <AIResponse text={aiOutput} streaming={aiStreaming} onCancel={cancelAi} />
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left Column: Calendar & Summary */}
@@ -235,7 +238,7 @@ const App: React.FC = () => {
           {/* Right Column: Task List */}
           <div className="lg:col-span-8">
             <div className="flex items-center justify-between mb-6">
-              <div>
+              <div className="flex-1">
                 <h2 className="text-2xl font-bold text-white">{formatDate(selectedDate)}</h2>
                 <p className="text-zinc-400 text-sm mt-1">
                   {dailyTasks.length === 0 
@@ -258,7 +261,6 @@ const App: React.FC = () => {
               groups={GROUPS}
               onToggleTask={toggleTask}
               onDeleteTask={deleteTask}
-              onAddSubtasks={handleAiSubtasks}
               onToggleSubtask={(taskId, subtaskId) => toggleSubtaskLocal(taskId, subtaskId)}
               onAddSubtask={(taskId, title) => { /* 添加子任务移动到编辑弹窗 */ }}
               onOpenEdit={(task) => setEditingTask(task)}

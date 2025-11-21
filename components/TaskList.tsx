@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Task, Group } from '../types';
-import { Check, Trash2, ChevronDown, ChevronRight, Sparkles, Clock, ListChecks } from 'lucide-react';
+import { Check, Trash2, ChevronDown, ChevronRight, Clock, ListChecks } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface TaskListProps {
@@ -9,11 +9,10 @@ interface TaskListProps {
   groups: Group[];
   onToggleTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
-  onAddSubtasks: (taskId: string) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   onAddSubtask?: (taskId: string, title: string) => void;
   onOpenEdit?: (task: Task) => void;
-  loadingAiId: string | null;
+  loadingAiId?: string | null;
 }
 
 export const TaskList: React.FC<TaskListProps> = ({ 
@@ -21,7 +20,6 @@ export const TaskList: React.FC<TaskListProps> = ({
   groups, 
   onToggleTask, 
   onDeleteTask,
-  onAddSubtasks,
   onToggleSubtask,
   onAddSubtask,
   onOpenEdit,
@@ -43,7 +41,7 @@ export const TaskList: React.FC<TaskListProps> = ({
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-        <Sparkles className="w-12 h-12 mb-4 opacity-20" />
+        <ListChecks className="w-12 h-12 mb-4 opacity-20" />
         <p>No tasks for this day. Enjoy your free time!</p>
       </div>
     );
@@ -71,8 +69,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                   group={group}
                   onToggle={() => onToggleTask(task.id)}
                   onDelete={() => onDeleteTask(task.id)}
-                  onAiAssist={() => onAddSubtasks(task.id)}
-                  isAiLoading={loadingAiId === task.id}
+                  isAiLoading={false}
                   onToggleSubtask={(sid) => onToggleSubtask && onToggleSubtask(task.id, sid)}
                   onAddSubtask={(title) => onAddSubtask && onAddSubtask(task.id, title)}
                   onOpenEdit={() => onOpenEdit && onOpenEdit(task)}
@@ -91,14 +88,13 @@ interface TaskItemProps {
   group: Group;
   onToggle: () => void;
   onDelete: () => void;
-  onAiAssist: () => void;
   isAiLoading: boolean;
   onToggleSubtask?: (id: string) => void;
   onAddSubtask?: (title: string) => void;
   onOpenEdit?: () => void;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, onAiAssist, isAiLoading, onToggleSubtask, onAddSubtask, onOpenEdit }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, isAiLoading, onToggleSubtask, onAddSubtask, onOpenEdit }) => {
   const [expanded, setExpanded] = React.useState(false);
   const [newSubtask, setNewSubtask] = React.useState('');
 
@@ -145,25 +141,20 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, on
             <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{task.description}</p>
           )}
           { (task.subtasks && task.subtasks.length > 0) && (
-            <p className="text-xs text-zinc-400 mt-1 flex items-center gap-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
+              className="text-xs text-zinc-400 mt-1 flex items-center gap-1 hover:text-white transition-colors"
+              title="View subtasks"
+            >
               <ListChecks className="w-3 h-3" />
               {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
-            </p>
+              {expanded ? <ChevronDown className="w-3 h-3 ml-1" /> : <ChevronRight className="w-3 h-3 ml-1" />}
+            </button>
           )}
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {!task.completed && (
-            <button 
-               onClick={(e) => { e.stopPropagation(); onAiAssist(); }}
-               disabled={isAiLoading}
-               className={cn("p-1.5 rounded-md hover:bg-zinc-700 text-zinc-400 hover:text-purple-400 transition-colors", isAiLoading && "animate-pulse text-purple-400")}
-               title="Generate Subtasks with AI"
-            >
-              <Sparkles className="w-4 h-4" />
-            </button>
-          )}
           <button 
              onClick={(e) => { e.stopPropagation(); onDelete(); }}
              className="p-1.5 rounded-md hover:bg-red-500/10 text-zinc-400 hover:text-red-400 transition-colors"
@@ -171,10 +162,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, on
             <Trash2 className="w-4 h-4" />
           </button>
           <button 
-             onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
+             onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
              className="p-1.5 rounded-md hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
           >
-            <ChevronDown className="w-4 h-4" />
+            {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </button>
         </div>
       </div>
@@ -191,8 +182,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, on
              <div className="w-full h-px bg-white/5 mb-2"></div>
              {(task.subtasks || []).map((st) => (
                <div key={st.id} className="flex items-center gap-2 text-xs text-zinc-400">
-                 <button onClick={(e) => { e.stopPropagation(); onToggleSubtask && onToggleSubtask(st.id); }} className={cn("w-4 h-4 rounded-full border flex items-center justify-center", st.completed ? "bg-emerald-500 border-emerald-500" : "border-zinc-600")}></button>
-                 <span className={cn(st.completed && "line-through text-zinc-500")}>{st.title}</span>
+                <button onClick={(e) => { e.stopPropagation(); onToggleSubtask && onToggleSubtask(st.id); }} className={cn("w-4 h-4 rounded-full border flex items-center justify-center", st.completed ? "bg-emerald-500 border-emerald-500 text-white" : "border-zinc-600")}>{st.completed && <Check className="w-3 h-3" />}</button>
+                <span className={cn(st.completed && "line-through text-zinc-500")}>{st.title}</span>
                </div>
              ))}
              {/* 子任务的添加移至编辑弹窗，不在列表直接添加 */}

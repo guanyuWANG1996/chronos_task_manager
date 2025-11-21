@@ -135,7 +135,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         date, _ := body["date"].(string)
         timeStr, _ := body["time"].(string)
         groupId, _ := body["groupId"].(string)
-        _, err := pool.Exec(ctx, "UPDATE todos SET title=COALESCE(NULLIF($1,''),title), description=COALESCE($2,description), date=COALESCE(NULLIF($3,''),date), time=COALESCE(NULLIF($4,''),time), group_id=COALESCE(NULLIF($5,''),group_id) WHERE user_id=$6 AND id=$7", title, desc, date, timeStr, groupId, c.UserID, id)
+        _, err := pool.Exec(ctx, "UPDATE todos SET title=COALESCE(NULLIF($1,''),title), description=COALESCE($2,description), date=COALESCE(NULLIF($3,'')::date,date), time=COALESCE(NULLIF($4,''),time), group_id=COALESCE(NULLIF($5,''),group_id) WHERE user_id=$6 AND id=$7", title, desc, date, timeStr, groupId, c.UserID, id)
         if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()}); return }
         w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
