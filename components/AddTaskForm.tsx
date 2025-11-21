@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Group } from '../types';
 import { cn } from '../lib/utils';
+import { TimePicker } from './TimePicker';
 
 interface AddTaskFormProps {
   selectedDate: string;
@@ -61,12 +62,7 @@ export const AddTaskForm: React.FC<AddTaskFormProps> = ({ selectedDate, groups, 
 
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1.5">Time (Optional)</label>
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-              />
+              <TimePicker value={time} onChange={setTime} />
             </div>
 
             <div>

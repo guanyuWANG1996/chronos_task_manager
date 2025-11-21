@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { Task } from '../types';
+import { TimePicker } from './TimePicker';
+import { cn } from '../lib/utils';
 
 interface TaskDetailModalProps {
   task: Task;
   onClose: () => void;
   onSave: (updates: Partial<Task>) => void;
+  onToggleSubtask?: (id: string) => void;
+  onAddSubtask?: (title: string) => void;
 }
 
-export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onSave }) => {
+export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onSave, onToggleSubtask, onAddSubtask }) => {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || '');
   const [time, setTime] = useState(task.time || '');
+  const [newSubtask, setNewSubtask] = useState('');
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,9 +30,33 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
           <button onClick={onClose} className="text-zinc-400 hover:text-white">Close</button>
         </div>
         <form onSubmit={submit} className="space-y-4">
-          <input value={title} onChange={(e)=>setTitle(e.target.value)} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white" />
-          <textarea value={description} onChange={(e)=>setDescription(e.target.value)} rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white" />
-          <input type="time" value={time} onChange={(e)=>setTime(e.target.value)} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white" />
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Task Title</label>
+            <input value={title} onChange={(e)=>setTitle(e.target.value)} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Description</label>
+            <textarea value={description} onChange={(e)=>setDescription(e.target.value)} rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Time</label>
+            <TimePicker value={time} onChange={setTime} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Subtasks</label>
+            <div className="space-y-2">
+              {(task.subtasks || []).map(st => (
+                <div key={st.id} className="flex items-center gap-2 text-xs text-zinc-400">
+                  <button type="button" onClick={() => onToggleSubtask && onToggleSubtask(st.id)} className={cn("w-4 h-4 rounded-full border", st.completed ? "bg-emerald-500 border-emerald-500" : "border-zinc-600")}></button>
+                  <span className={cn(st.completed && "line-through text-zinc-500")}>{st.title}</span>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <input value={newSubtask} onChange={(e)=>setNewSubtask(e.target.value)} placeholder="Add a subtask" className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white" />
+                <button type="button" onClick={() => { if (newSubtask.trim()) { onAddSubtask && onAddSubtask(newSubtask.trim()); setNewSubtask('') } }} className="px-3 py-2 rounded-xl bg-white text-black text-sm">Add</button>
+              </div>
+            </div>
+          </div>
           <button type="submit" className="w-full bg-white text-black py-3 rounded-xl">Save</button>
         </form>
       </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Task, Group } from '../types';
-import { Check, Trash2, ChevronDown, ChevronRight, MoreHorizontal, Sparkles } from 'lucide-react';
+import { Check, Trash2, ChevronDown, ChevronRight, Sparkles, Clock, ListChecks } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface TaskListProps {
@@ -12,6 +12,7 @@ interface TaskListProps {
   onAddSubtasks: (taskId: string) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   onAddSubtask?: (taskId: string, title: string) => void;
+  onOpenEdit?: (task: Task) => void;
   loadingAiId: string | null;
 }
 
@@ -23,6 +24,7 @@ export const TaskList: React.FC<TaskListProps> = ({
   onAddSubtasks,
   onToggleSubtask,
   onAddSubtask,
+  onOpenEdit,
   loadingAiId
 }) => {
   
@@ -73,6 +75,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                   isAiLoading={loadingAiId === task.id}
                   onToggleSubtask={(sid) => onToggleSubtask && onToggleSubtask(task.id, sid)}
                   onAddSubtask={(title) => onAddSubtask && onAddSubtask(task.id, title)}
+                  onOpenEdit={() => onOpenEdit && onOpenEdit(task)}
                 />
               ))}
             </AnimatePresence>
@@ -92,9 +95,10 @@ interface TaskItemProps {
   isAiLoading: boolean;
   onToggleSubtask?: (id: string) => void;
   onAddSubtask?: (title: string) => void;
+  onOpenEdit?: () => void;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, onAiAssist, isAiLoading, onToggleSubtask, onAddSubtask }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, onAiAssist, isAiLoading, onToggleSubtask, onAddSubtask, onOpenEdit }) => {
   const [expanded, setExpanded] = React.useState(false);
   const [newSubtask, setNewSubtask] = React.useState('');
 
@@ -124,7 +128,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, on
         </button>
 
         {/* Content */}
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpenEdit && onOpenEdit()}>
           <div className="flex items-center justify-between">
             <span className={cn(
               "text-sm font-medium truncate transition-all",
@@ -132,7 +136,9 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, on
             )}>
               {task.title}
             </span>
-            {task.time && <span className="text-xs text-zinc-500 ml-2">{task.time}</span>}
+            {task.time && (
+              <span className="text-xs text-zinc-500 ml-2 flex items-center gap-1"><Clock className="w-3 h-3" />{task.time}</span>
+            )}
           </div>
           
           {task.description && (
@@ -186,10 +192,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, on
                  <span className={cn(st.completed && "line-through text-zinc-500")}>{st.title}</span>
                </div>
              ))}
-             <div className="flex items-center gap-2 mt-2">
-               <input value={newSubtask} onChange={(e)=>setNewSubtask(e.target.value)} placeholder="Add subtask" className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-lg px-2 py-1 text-xs text-white" />
-               <button onClick={(e)=>{ e.stopPropagation(); if(newSubtask.trim()){ onAddSubtask && onAddSubtask(newSubtask.trim()); setNewSubtask(''); }}} className="text-xs px-2 py-1 rounded bg-white text-black">Add</button>
-             </div>
+             {/* 子任务的添加移至编辑弹窗，不在列表直接添加 */}
           </motion.div>
         )}
       </AnimatePresence>

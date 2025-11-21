@@ -253,7 +253,8 @@ const App: React.FC = () => {
               onDeleteTask={deleteTask}
               onAddSubtasks={handleAiSubtasks}
               onToggleSubtask={(taskId, subtaskId) => toggleSubtaskLocal(taskId, subtaskId)}
-              onAddSubtask={(taskId, title) => addSubtaskLocal(taskId, title)}
+              onAddSubtask={(taskId, title) => { /* 添加子任务移动到编辑弹窗 */ }}
+              onOpenEdit={(task) => setEditingTask(task)}
               loadingAiId={loadingAiId}
             />
           </div>
@@ -273,7 +274,9 @@ const App: React.FC = () => {
         <TaskDetailModal 
           task={editingTask}
           onClose={() => setEditingTask(null)}
-          onSave={async (u) => { if (!token) return; const res = await updateTodo({ id: editingTask.id, title: u.title, description: u.description, time: u.time }, token); if (res.ok) { setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...u } as Task : t)); setEditingTask(null); } else { setToast(res.error || 'Update task failed'); } }}
+          onSave={async (u) => { if (!token || !editingTask) return; const res = await updateTodo({ id: editingTask.id, title: u.title, description: u.description, time: u.time }, token); if (res.ok) { setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...u } as Task : t)); setEditingTask(null); } else { setToast(res.error || 'Update task failed'); } }}
+          onToggleSubtask={(sid) => { if (!editingTask) return; toggleSubtaskLocal(editingTask.id, sid) }}
+          onAddSubtask={(title) => { if (!editingTask) return; addSubtaskLocal(editingTask.id, title) }}
         />
       )}
       {toast && <Toast message={toast} onClose={() => setToast('')} />}

@@ -1,16 +1,15 @@
 package db
 
 import (
-	"context"
-	"errors"
-	"log"
-	"os"
-	"strings"
-	"sync"
-	"time"
+    "context"
+    "errors"
+    "log"
+    "os"
+    "strings"
+    "sync"
+    "time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+    "github.com/jackc/pgx/v5/pgxpool"
 )
 
 var pool *pgxpool.Pool
@@ -77,18 +76,7 @@ func GetPool(ctx context.Context) (*pgxpool.Pool, error) {
         log.Printf("db NewWithConfig error: %v", err)
         return nil, err
     }
-    if err := initSchema(ctx, p); err != nil {
-        p.Close()
-        log.Printf("db initSchema error: %v", err)
-        return nil, err
-    }
-    if err := migrateSchema(ctx, p); err != nil {
-        // Try non-pooling on migration errors
-        log.Printf("db migrateSchema error: %v", err)
-        if err2 := migrateSchemaNonPooling(ctx); err2 != nil {
-            log.Printf("db migrateSchema non-pooling error: %v", err2)
-        }
-    }
+    // DDL 迁移已移除；请在数据库中手动执行必要的 SQL 以创建/更新表结构
     pool = p
     log.Printf("db pool initialized")
     return pool, nil
@@ -110,159 +98,4 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
-}
-
-func initSchema(ctx context.Context, p *pgxpool.Pool) error {
-    if _, err := p.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS users (
-            id BIGSERIAL PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at TIMESTAMPTZ DEFAULT now()
-        )
-    `); err != nil {
-        log.Printf("init users table error: %v", err)
-        if err2 := initSchemaNonPooling(ctx); err2 != nil {
-            return err
-        }
-        log.Printf("init users table succeeded via non-pooling connection")
-    }
-    if _, err := p.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS todos (
-            id BIGSERIAL PRIMARY KEY,
-            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            title TEXT NOT NULL,
-            description TEXT,
-            date DATE NOT NULL,
-            time TEXT,
-            group_id TEXT NOT NULL,
-            completed BOOLEAN NOT NULL DEFAULT FALSE,
-            created_at TIMESTAMPTZ DEFAULT now()
-        )
-    `); err != nil {
-        log.Printf("init todos table error: %v", err)
-        if err2 := initSchemaNonPooling(ctx); err2 != nil {
-            return err
-        }
-        log.Printf("init todos table succeeded via non-pooling connection")
-    }
-    if _, err := p.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS subtasks (
-            id BIGSERIAL PRIMARY KEY,
-            todo_id BIGINT NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
-            title TEXT NOT NULL,
-            completed BOOLEAN NOT NULL DEFAULT FALSE
-        )
-    `); err != nil {
-        log.Printf("init subtasks table error: %v", err)
-        if err2 := initSchemaNonPooling(ctx); err2 != nil {
-            return err
-        }
-        log.Printf("init subtasks table succeeded via non-pooling connection")
-    }
-    return nil
-}
-
-// Ensure new columns exist when table already created previously
-func migrateSchema(ctx context.Context, p *pgxpool.Pool) error {
-    // Add time column if not exists
-    if _, err := p.Exec(ctx, `ALTER TABLE IF EXISTS todos ADD COLUMN IF NOT EXISTS time TEXT`); err != nil {
-        return err
-    }
-    // Create subtasks if missing
-    if _, err := p.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS subtasks (
-            id BIGSERIAL PRIMARY KEY,
-            todo_id BIGINT NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
-            title TEXT NOT NULL,
-            completed BOOLEAN NOT NULL DEFAULT FALSE
-        )`); err != nil {
-        return err
-    }
-    return nil
-}
-
-func initSchemaNonPooling(ctx context.Context) error {
-	url := firstNonEmpty(
-		os.Getenv("POSTGRES_URL_NON_POOLING"),
-		os.Getenv("DATABASE_URL_UNPOOLED"),
-		os.Getenv("POSTGRES_URL"),
-		os.Getenv("DATABASE_URL"),
-	)
-	if url == "" {
-		return errors.New("database url not set for non-pooling init")
-	}
-	if !strings.Contains(url, "sslmode=") {
-		if strings.Contains(url, "?") {
-			url += "&sslmode=require"
-		} else {
-			url += "?sslmode=require"
-		}
-	}
-	conn, err := pgx.Connect(ctx, url)
-	if err != nil {
-		return err
-	}
-	defer conn.Close(ctx)
-	if _, err := conn.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS users (
-            id BIGSERIAL PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at TIMESTAMPTZ DEFAULT now()
-        )
-    `); err != nil {
-		return err
-	}
-    if _, err := conn.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS todos (
-            id BIGSERIAL PRIMARY KEY,
-            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            title TEXT NOT NULL,
-            description TEXT,
-            date DATE NOT NULL,
-            time TEXT,
-            group_id TEXT NOT NULL,
-            completed BOOLEAN NOT NULL DEFAULT FALSE,
-            created_at TIMESTAMPTZ DEFAULT now()
-        )
-    `); err != nil {
-        return err
-    }
-    if _, err := conn.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS subtasks (
-            id BIGSERIAL PRIMARY KEY,
-            todo_id BIGINT NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
-            title TEXT NOT NULL,
-            completed BOOLEAN NOT NULL DEFAULT FALSE
-        )
-    `); err != nil {
-        return err
-    }
-    return nil
-}
-
-func migrateSchemaNonPooling(ctx context.Context) error {
-    url := firstNonEmpty(
-        os.Getenv("POSTGRES_URL_NON_POOLING"),
-        os.Getenv("DATABASE_URL_UNPOOLED"),
-        os.Getenv("POSTGRES_URL"),
-        os.Getenv("DATABASE_URL"),
-    )
-    if url == "" { return nil }
-    if !strings.Contains(url, "sslmode=") {
-        if strings.Contains(url, "?") { url += "&sslmode=require" } else { url += "?sslmode=require" }
-    }
-    conn, err := pgx.Connect(ctx, url)
-    if err != nil { return err }
-    defer conn.Close(ctx)
-    if _, err := conn.Exec(ctx, `ALTER TABLE IF EXISTS todos ADD COLUMN IF NOT EXISTS time TEXT`); err != nil { return err }
-    if _, err := conn.Exec(ctx, `
-        CREATE TABLE IF NOT EXISTS subtasks (
-            id BIGSERIAL PRIMARY KEY,
-            todo_id BIGINT NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
-            title TEXT NOT NULL,
-            completed BOOLEAN NOT NULL DEFAULT FALSE
-        )`); err != nil { return err }
-    return nil
 }
