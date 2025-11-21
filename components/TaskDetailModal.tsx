@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Task } from '../types';
 import { TimePicker } from './TimePicker';
 import { cn } from '../lib/utils';
+import { X, Type, FileText, Clock, ListChecks } from 'lucide-react';
 
 interface TaskDetailModalProps {
   task: Task;
@@ -27,23 +28,23 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
       <div className="w-full max-w-md bg-[#18181b] border border-zinc-800 rounded-2xl p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-white">Edit Task</h3>
-          <button onClick={onClose} className="text-zinc-400 hover:text-white">Close</button>
+          <button onClick={onClose} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Task Title</label>
+            <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><Type className="w-3 h-3" /> Task Title</label>
             <input value={title} onChange={(e)=>setTitle(e.target.value)} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Description</label>
+            <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><FileText className="w-3 h-3" /> Description</label>
             <textarea value={description} onChange={(e)=>setDescription(e.target.value)} rows={3} className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Time</label>
+            <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><Clock className="w-3 h-3" /> Time</label>
             <TimePicker value={time} onChange={setTime} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Subtasks</label>
+            <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><ListChecks className="w-3 h-3" /> Subtasks</label>
             <div className="space-y-2">
               {(task.subtasks || []).map(st => (
                 <div key={st.id} className="flex items-center gap-2 text-xs text-zinc-400">

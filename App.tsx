@@ -89,19 +89,26 @@ const App: React.FC = () => {
 
   const toggleSubtaskLocal = async (taskId: string, subtaskId: string) => {
     if (!token) return;
-    const res = await toggleSubtask(subtaskId, token);
-    if (res.ok) {
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: (t.subtasks||[]).map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st) } : t));
-    } else { setToast(res.error || 'Toggle subtask failed'); }
+    try {
+      const res = await toggleSubtask(subtaskId, token);
+      if (res.ok) {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: (t.subtasks||[]).map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st) } : t));
+        setEditingTask(prev => prev && prev.id === taskId ? { ...prev, subtasks: (prev.subtasks||[]).map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st) } : prev);
+      } else { setToast(res.error || 'Toggle subtask failed'); }
+    } catch (e:any) { setToast(e?.message || 'Toggle subtask error'); }
   };
 
   const addSubtaskLocal = async (taskId: string, title: string) => {
     if (!token) return;
-    const res = await addSubtask(taskId, title, token);
-    if (res.ok) {
-      const st = res.data;
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: [...(t.subtasks||[]), { id: String(st.data.id), title: st.data.title, completed: false }] } : t));
-    } else { setToast(res.error || 'Add subtask failed'); }
+    try {
+      const res = await addSubtask(taskId, title, token);
+      if (res.ok) {
+        const st = res.data as any;
+        const newSt = { id: String(st?.id ?? st?.data?.id ?? Date.now()), title: String(st?.title ?? st?.data?.title ?? title), completed: false };
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: [...(t.subtasks||[]), newSt] } : t));
+        setEditingTask(prev => prev && prev.id === taskId ? { ...prev, subtasks: [...(prev.subtasks||[]), newSt] } : prev);
+      } else { setToast(res.error || 'Add subtask failed'); }
+    } catch (e:any) { setToast(e?.message || 'Add subtask error'); }
   };
 
   useEffect(() => {
