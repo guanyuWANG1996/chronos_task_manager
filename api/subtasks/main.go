@@ -4,6 +4,7 @@ import (
     "context"
     "encoding/json"
     "net/http"
+    "strconv"
 
     "chronos-task-manager/pkg/auth"
     "chronos-task-manager/pkg/db"
@@ -32,9 +33,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     case http.MethodPost:
         var body map[string]interface{}
         if err := json.NewDecoder(r.Body).Decode(&body); err != nil { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "invalid json"}); return }
-        tidFloat, ok := body["todoId"].(float64)
-        if !ok { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing todoId"}); return }
-        tid := int64(tidFloat)
+        var tid int64
+        switch v := body["todoId"].(type) {
+        case float64:
+            tid = int64(v)
+        case string:
+            if parsed, err := strconv.ParseInt(v, 10, 64); err == nil { tid = parsed }
+        }
+        if tid == 0 { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing todoId"}); return }
         title, _ := body["title"].(string)
         var sid int64
         if err := pool.QueryRow(ctx, "INSERT INTO subtasks(todo_id,title,completed) VALUES($1,$2,false) RETURNING id", tid, title).Scan(&sid); err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"}); return }

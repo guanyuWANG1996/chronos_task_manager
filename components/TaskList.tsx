@@ -144,8 +144,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, on
           {task.description && (
             <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{task.description}</p>
           )}
-          {task.time && (
-            <p className="text-xs text-zinc-400 mt-1">{task.time}</p>
+          { (task.subtasks && task.subtasks.length > 0) && (
+            <p className="text-xs text-zinc-400 mt-1 flex items-center gap-1">
+              <ListChecks className="w-3 h-3" />
+              {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
+            </p>
           )}
         </div>
 

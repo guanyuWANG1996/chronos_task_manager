@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, FileText, Clock, ListChecks, Type, Layers as LayersIcon } from 'lucide-react';
 import { Group } from '../types';
 import { cn } from '../lib/utils';
 import { TimePicker } from './TimePicker';
@@ -38,7 +38,7 @@ export const AddTaskForm: React.FC<AddTaskFormProps> = ({ selectedDate, groups, 
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Task Title</label>
+              <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><Type className="w-3 h-3" /> Task Title</label>
               <input
                 type="text"
                 autoFocus
@@ -50,7 +50,7 @@ export const AddTaskForm: React.FC<AddTaskFormProps> = ({ selectedDate, groups, 
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Description (Optional)</label>
+              <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><FileText className="w-3 h-3" /> Description (Optional)</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -61,12 +61,12 @@ export const AddTaskForm: React.FC<AddTaskFormProps> = ({ selectedDate, groups, 
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Time (Optional)</label>
+              <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><Clock className="w-3 h-3" /> Time (Optional)</label>
               <TimePicker value={time} onChange={setTime} />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Subtasks</label>
+              <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><ListChecks className="w-3 h-3" /> Subtasks</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -94,7 +94,7 @@ export const AddTaskForm: React.FC<AddTaskFormProps> = ({ selectedDate, groups, 
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Group</label>
+              <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><ListChecks className="w-3 h-3" /> Group</label>
               <div className="grid grid-cols-2 gap-2">
                 {groups.map(group => (
                   <button
