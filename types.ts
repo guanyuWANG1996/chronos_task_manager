@@ -16,6 +16,7 @@ export interface Task {
   title: string;
   description?: string;
   date: string; // YYYY-MM-DD
+  time?: string; // HH:MM optional
   groupId: string;
   completed: boolean;
   subtasks?: SubTask[];

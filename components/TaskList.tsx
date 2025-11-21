@@ -10,6 +10,8 @@ interface TaskListProps {
   onToggleTask: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
   onAddSubtasks: (taskId: string) => void;
+  onToggleSubtask?: (taskId: string, subtaskId: string) => void;
+  onAddSubtask?: (taskId: string, title: string) => void;
   loadingAiId: string | null;
 }
 
@@ -19,6 +21,8 @@ export const TaskList: React.FC<TaskListProps> = ({
   onToggleTask, 
   onDeleteTask,
   onAddSubtasks,
+  onToggleSubtask,
+  onAddSubtask,
   loadingAiId
 }) => {
   
@@ -67,6 +71,8 @@ export const TaskList: React.FC<TaskListProps> = ({
                   onDelete={() => onDeleteTask(task.id)}
                   onAiAssist={() => onAddSubtasks(task.id)}
                   isAiLoading={loadingAiId === task.id}
+                  onToggleSubtask={(sid) => onToggleSubtask && onToggleSubtask(task.id, sid)}
+                  onAddSubtask={(title) => onAddSubtask && onAddSubtask(task.id, title)}
                 />
               ))}
             </AnimatePresence>
@@ -84,10 +90,13 @@ interface TaskItemProps {
   onDelete: () => void;
   onAiAssist: () => void;
   isAiLoading: boolean;
+  onToggleSubtask?: (id: string) => void;
+  onAddSubtask?: (title: string) => void;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, onAiAssist, isAiLoading }) => {
+const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, onAiAssist, isAiLoading, onToggleSubtask, onAddSubtask }) => {
   const [expanded, setExpanded] = React.useState(false);
+  const [newSubtask, setNewSubtask] = React.useState('');
 
   return (
     <motion.div
@@ -123,10 +132,14 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, on
             )}>
               {task.title}
             </span>
+            {task.time && <span className="text-xs text-zinc-500 ml-2">{task.time}</span>}
           </div>
           
           {task.description && (
             <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{task.description}</p>
+          )}
+          {task.time && (
+            <p className="text-xs text-zinc-400 mt-1">{task.time}</p>
           )}
         </div>
 
@@ -148,12 +161,18 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, on
           >
             <Trash2 className="w-4 h-4" />
           </button>
+          <button 
+             onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
+             className="p-1.5 rounded-md hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
       {/* Subtasks / AI Expansion */}
       <AnimatePresence>
-        {expanded && (task.subtasks && task.subtasks.length > 0) && (
+        {expanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -161,12 +180,16 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, group, onToggle, onDelete, on
             className="mt-3 pl-8 space-y-2 overflow-hidden"
           >
              <div className="w-full h-px bg-white/5 mb-2"></div>
-             {task.subtasks.map((st) => (
+             {(task.subtasks || []).map((st) => (
                <div key={st.id} className="flex items-center gap-2 text-xs text-zinc-400">
-                 <div className="w-1.5 h-1.5 rounded-full bg-zinc-600"></div>
-                 <span>{st.title}</span>
+                 <button onClick={(e) => { e.stopPropagation(); onToggleSubtask && onToggleSubtask(st.id); }} className={cn("w-4 h-4 rounded-full border flex items-center justify-center", st.completed ? "bg-emerald-500 border-emerald-500" : "border-zinc-600")}></button>
+                 <span className={cn(st.completed && "line-through text-zinc-500")}>{st.title}</span>
                </div>
              ))}
+             <div className="flex items-center gap-2 mt-2">
+               <input value={newSubtask} onChange={(e)=>setNewSubtask(e.target.value)} placeholder="Add subtask" className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-lg px-2 py-1 text-xs text-white" />
+               <button onClick={(e)=>{ e.stopPropagation(); if(newSubtask.trim()){ onAddSubtask && onAddSubtask(newSubtask.trim()); setNewSubtask(''); }}} className="text-xs px-2 py-1 rounded bg-white text-black">Add</button>
+             </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -127,6 +127,7 @@ func initSchema(ctx context.Context, p *pgxpool.Pool) error {
             title TEXT NOT NULL,
             description TEXT,
             date DATE NOT NULL,
+            time TEXT,
             group_id TEXT NOT NULL,
             completed BOOLEAN NOT NULL DEFAULT FALSE,
             created_at TIMESTAMPTZ DEFAULT now()
@@ -137,6 +138,20 @@ func initSchema(ctx context.Context, p *pgxpool.Pool) error {
             return err
         }
         log.Printf("init todos table succeeded via non-pooling connection")
+    }
+    if _, err := p.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS subtasks (
+            id BIGSERIAL PRIMARY KEY,
+            todo_id BIGINT NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            completed BOOLEAN NOT NULL DEFAULT FALSE
+        )
+    `); err != nil {
+        log.Printf("init subtasks table error: %v", err)
+        if err2 := initSchemaNonPooling(ctx); err2 != nil {
+            return err
+        }
+        log.Printf("init subtasks table succeeded via non-pooling connection")
     }
     return nil
 }
@@ -173,19 +188,30 @@ func initSchemaNonPooling(ctx context.Context) error {
     `); err != nil {
 		return err
 	}
-	if _, err := conn.Exec(ctx, `
+    if _, err := conn.Exec(ctx, `
         CREATE TABLE IF NOT EXISTS todos (
             id BIGSERIAL PRIMARY KEY,
             user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             title TEXT NOT NULL,
             description TEXT,
             date DATE NOT NULL,
+            time TEXT,
             group_id TEXT NOT NULL,
             completed BOOLEAN NOT NULL DEFAULT FALSE,
             created_at TIMESTAMPTZ DEFAULT now()
         )
     `); err != nil {
-		return err
-	}
-	return nil
+        return err
+    }
+    if _, err := conn.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS subtasks (
+            id BIGSERIAL PRIMARY KEY,
+            todo_id BIGINT NOT NULL REFERENCES todos(id) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            completed BOOLEAN NOT NULL DEFAULT FALSE
+        )
+    `); err != nil {
+        return err
+    }
+    return nil
 }

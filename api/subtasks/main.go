@@ -1,0 +1,57 @@
+package handler
+
+import (
+    "context"
+    "encoding/json"
+    "net/http"
+
+    "chronos-task-manager/pkg/auth"
+    "chronos-task-manager/pkg/db"
+)
+
+func Handler(w http.ResponseWriter, r *http.Request) {
+    token, err := auth.FromAuthHeader(r.Header.Get("Authorization"))
+    if err != nil { w.WriteHeader(http.StatusUnauthorized); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "unauthorized"}); return }
+    c, err := auth.ParseToken(token)
+    if err != nil { w.WriteHeader(http.StatusUnauthorized); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "unauthorized"}); return }
+    ctx := context.Background()
+    pool, err := db.GetPool(ctx)
+    if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"}); return }
+
+    switch r.Method {
+    case http.MethodPatch:
+        var body map[string]interface{}
+        if err := json.NewDecoder(r.Body).Decode(&body); err != nil { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "invalid json"}); return }
+        sidFloat, ok := body["id"].(float64)
+        if !ok { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing id"}); return }
+        sid := int64(sidFloat)
+        _, err := pool.Exec(ctx, "UPDATE subtasks SET completed = NOT completed WHERE id=$1 AND todo_id IN (SELECT id FROM todos WHERE user_id=$2)", sid, c.UserID)
+        if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"}); return }
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+    case http.MethodPost:
+        var body map[string]interface{}
+        if err := json.NewDecoder(r.Body).Decode(&body); err != nil { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "invalid json"}); return }
+        tidFloat, ok := body["todoId"].(float64)
+        if !ok { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing todoId"}); return }
+        tid := int64(tidFloat)
+        title, _ := body["title"].(string)
+        var sid int64
+        if err := pool.QueryRow(ctx, "INSERT INTO subtasks(todo_id,title,completed) VALUES($1,$2,false) RETURNING id", tid, title).Scan(&sid); err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"}); return }
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "data": map[string]interface{}{"id": sid, "title": title, "completed": false}})
+    case http.MethodDelete:
+        var body map[string]interface{}
+        if err := json.NewDecoder(r.Body).Decode(&body); err != nil { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "invalid json"}); return }
+        sidFloat, ok := body["id"].(float64)
+        if !ok { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing id"}); return }
+        sid := int64(sidFloat)
+        _, err := pool.Exec(ctx, "DELETE FROM subtasks WHERE id=$1 AND todo_id IN (SELECT id FROM todos WHERE user_id=$2)", sid, c.UserID)
+        if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"}); return }
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
+    default:
+        w.WriteHeader(http.StatusMethodNotAllowed)
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "method not allowed"})
+    }
+}

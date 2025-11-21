@@ -44,7 +44,7 @@ export async function getTodos(date: string, token: string) {
   return data;
 }
 
-export async function createTodo(payload: { title: string; description?: string; date: string; groupId: string }, token: string) {
+export async function createTodo(payload: { title: string; description?: string; date: string; time?: string; groupId: string; subtasks?: { title: string; completed?: boolean }[] }, token: string) {
   const res = await fetch('/api/todos/main', {
     method: 'POST',
     headers: authHeaders(token),
@@ -82,6 +82,41 @@ export async function deleteTodo(id: string, token: string) {
 export async function getCalendar(month: string, token: string) {
   const res = await fetch(`/api/calendar/main?month=${encodeURIComponent(month)}`, {
     headers: authHeaders(token)
+  });
+  let data: any = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) return { ok: false, error: data?.error || `HTTP ${res.status}` };
+  return data;
+}
+export async function updateTodo(payload: { id: string; title?: string; description?: string; date?: string; time?: string; groupId?: string }, token: string) {
+  const res = await fetch('/api/todos/main', {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload)
+  });
+  let data: any = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) return { ok: false, error: data?.error || `HTTP ${res.status}` };
+  return data;
+}
+
+export async function toggleSubtask(id: string, token: string) {
+  const res = await fetch('/api/subtasks/main', {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify({ id })
+  });
+  let data: any = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) return { ok: false, error: data?.error || `HTTP ${res.status}` };
+  return data;
+}
+
+export async function addSubtask(todoId: string, title: string, token: string) {
+  const res = await fetch('/api/subtasks/main', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ todoId, title })
   });
   let data: any = null;
   try { data = await res.json(); } catch {}

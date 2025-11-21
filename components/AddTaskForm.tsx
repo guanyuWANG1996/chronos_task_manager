@@ -6,7 +6,7 @@ import { cn } from '../lib/utils';
 interface AddTaskFormProps {
   selectedDate: string;
   groups: Group[];
-  onAdd: (title: string, description: string, groupId: string) => void;
+  onAdd: (title: string, description: string, groupId: string, time?: string, subtasks?: { title: string }[]) => void;
   onCancel: () => void;
 }
 
@@ -14,11 +14,14 @@ export const AddTaskForm: React.FC<AddTaskFormProps> = ({ selectedDate, groups, 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [groupId, setGroupId] = useState(groups[0].id);
+  const [time, setTime] = useState<string>('');
+  const [subtaskInput, setSubtaskInput] = useState<string>('');
+  const [subtasks, setSubtasks] = useState<{ title: string }[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    onAdd(title, description, groupId);
+    onAdd(title, description, groupId, time || undefined, subtasks);
   };
 
   return (
@@ -54,6 +57,44 @@ export const AddTaskForm: React.FC<AddTaskFormProps> = ({ selectedDate, groups, 
                 placeholder="Add some details..."
                 className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Time (Optional)</label>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Subtasks</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={subtaskInput}
+                  onChange={(e) => setSubtaskInput(e.target.value)}
+                  placeholder="Add a subtask"
+                  className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => { if (subtaskInput.trim()) { setSubtasks(prev => [...prev, { title: subtaskInput.trim() }]); setSubtaskInput(''); } }}
+                  className="px-3 py-2 rounded-xl bg-white text-black hover:bg-zinc-200 text-sm"
+                >Add</button>
+              </div>
+              {subtasks.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {subtasks.map((st, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs text-zinc-300 bg-zinc-900/30 border border-zinc-800 rounded-lg px-3 py-2">
+                      <span>{st.title}</span>
+                      <button type="button" onClick={() => setSubtasks(prev => prev.filter((_, idx) => idx !== i))} className="text-zinc-500 hover:text-red-400">Remove</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>

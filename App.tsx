@@ -3,12 +3,13 @@ import { Calendar } from './components/Calendar';
 import { TaskList } from './components/TaskList';
 import { AddTaskForm } from './components/AddTaskForm';
 import { AuthForm } from './components/AuthForm';
+import { TaskDetailModal } from './components/TaskDetailModal';
 import { GROUPS, INITIAL_TASKS } from './constants';
 import { Task } from './types';
 import { Plus, Calendar as CalendarIcon, Layout, Github } from 'lucide-react';
 import { formatDate, todayYMD } from './lib/utils';
 import { generateSubtasks } from './services/geminiService';
-import { getTodos, createTodo, toggleTodo, deleteTodo as apiDeleteTodo, getCalendar } from './services/api';
+import { getTodos, createTodo, toggleTodo, deleteTodo as apiDeleteTodo, getCalendar, toggleSubtask, updateTodo, addSubtask } from './services/api';
 
 const App: React.FC = () => {
   // Initialize with today's date
@@ -16,6 +17,7 @@ const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [allMonthTasks, setAllMonthTasks] = useState<Task[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [loadingAiId, setLoadingAiId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
@@ -27,12 +29,12 @@ const App: React.FC = () => {
   }, [tasks, selectedDate]);
 
   // Handlers
-  const addTask = async (title: string, description: string, groupId: string) => {
+  const addTask = async (title: string, description: string, groupId: string, time?: string, subtasks?: { title: string }[]) => {
     if (!token) return;
-    const res = await createTodo({ title, description, date: selectedDate, groupId }, token);
+    const res = await createTodo({ title, description, date: selectedDate, time, groupId, subtasks }, token);
     if (res.ok) {
       const t = res.data as any;
-      const newTask: Task = { id: String(t.id), title: t.title, description: t.description, date: t.date, groupId: t.groupId, completed: t.completed, subtasks: [] };
+      const newTask: Task = { id: String(t.id), title: t.title, description: t.description, date: t.date, time: t.time, groupId: t.groupId, completed: t.completed, subtasks: t.subtasks?.map((st:any)=>({ id: String(st.id), title: st.title, completed: st.completed })) || [] };
       setTasks(prev => [newTask, ...prev]);
       setAllMonthTasks(prev => [newTask, ...prev]);
       setIsAddModalOpen(false);
@@ -78,6 +80,23 @@ const App: React.FC = () => {
       console.error("Failed to generate subtasks", e);
     } finally {
       setLoadingAiId(null);
+    }
+  };
+
+  const toggleSubtaskLocal = async (taskId: string, subtaskId: string) => {
+    if (!token) return;
+    const res = await toggleSubtask(subtaskId, token);
+    if (res.ok) {
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: (t.subtasks||[]).map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st) } : t));
+    }
+  };
+
+  const addSubtaskLocal = async (taskId: string, title: string) => {
+    if (!token) return;
+    const res = await addSubtask(taskId, title, token);
+    if (res.ok) {
+      const st = res.data;
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: [...(t.subtasks||[]), { id: String(st.data.id), title: st.data.title, completed: false }] } : t));
     }
   };
 
@@ -229,6 +248,8 @@ const App: React.FC = () => {
               onToggleTask={toggleTask}
               onDeleteTask={deleteTask}
               onAddSubtasks={handleAiSubtasks}
+              onToggleSubtask={(taskId, subtaskId) => toggleSubtaskLocal(taskId, subtaskId)}
+              onAddSubtask={(taskId, title) => addSubtaskLocal(taskId, title)}
               loadingAiId={loadingAiId}
             />
           </div>
@@ -242,6 +263,13 @@ const App: React.FC = () => {
           groups={GROUPS}
           onAdd={addTask}
           onCancel={() => setIsAddModalOpen(false)}
+        />
+      )}
+      {editingTask && (
+        <TaskDetailModal 
+          task={editingTask}
+          onClose={() => setEditingTask(null)}
+          onSave={async (u) => { if (!token) return; const res = await updateTodo({ id: editingTask.id, title: u.title, description: u.description, time: u.time }, token); if (res.ok) { setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...u } as Task : t)); setEditingTask(null); } }}
         />
       )}
     </div>
