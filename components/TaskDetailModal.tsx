@@ -3,24 +3,27 @@ import { Task } from '../types';
 import { TimePicker } from './TimePicker';
 import { cn } from '../lib/utils';
 import { X, Type, FileText, Clock, ListChecks } from 'lucide-react';
+import { Group } from '../types';
 
 interface TaskDetailModalProps {
   task: Task;
+  groups: Group[];
   onClose: () => void;
   onSave: (updates: Partial<Task>) => void;
   onToggleSubtask?: (id: string) => void;
   onAddSubtask?: (title: string) => void;
 }
 
-export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onSave, onToggleSubtask, onAddSubtask }) => {
+export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, groups, onClose, onSave, onToggleSubtask, onAddSubtask }) => {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || '');
   const [time, setTime] = useState(task.time || '');
   const [newSubtask, setNewSubtask] = useState('');
+  const [groupId, setGroupId] = useState<string>(task.groupId);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ id: task.id, title, description, time });
+    onSave({ id: task.id, title, description, time, groupId });
   };
 
   return (
@@ -56,6 +59,26 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                 <input value={newSubtask} onChange={(e)=>setNewSubtask(e.target.value)} placeholder="Add a subtask" className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white" />
                 <button type="button" onClick={() => { if (newSubtask.trim()) { onAddSubtask && onAddSubtask(newSubtask.trim()); setNewSubtask('') } }} className="px-3 py-2 rounded-xl bg-white text-black text-sm">Add</button>
               </div>
+            </div>
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><ListChecks className="w-3 h-3" /> Group</label>
+            <div className="grid grid-cols-2 gap-2">
+              {groups.map(group => (
+                <button
+                  key={group.id}
+                  type="button"
+                  onClick={() => setGroupId(group.id)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg text-sm font-medium transition-all border",
+                    groupId === group.id
+                      ? `bg-zinc-800 border-zinc-600 text-white`
+                      : "bg-transparent border-zinc-800 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"
+                  )}
+                >
+                  {group.name}
+                </button>
+              ))}
             </div>
           </div>
           <button type="submit" className="w-full bg-white text-black py-3 rounded-xl">Save</button>

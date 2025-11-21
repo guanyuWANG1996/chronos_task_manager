@@ -280,8 +280,9 @@ const App: React.FC = () => {
       {editingTask && (
         <TaskDetailModal 
           task={editingTask}
+          groups={GROUPS}
           onClose={() => setEditingTask(null)}
-          onSave={async (u) => { if (!token || !editingTask) return; const res = await updateTodo({ id: editingTask.id, title: u.title, description: u.description, time: u.time }, token); if (res.ok) { setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...u } as Task : t)); setEditingTask(null); } else { setToast(res.error || 'Update task failed'); } }}
+          onSave={async (u) => { if (!token || !editingTask) return; const res = await updateTodo({ id: editingTask.id, title: u.title, description: u.description, time: u.time, groupId: u.groupId }, token); if (res.ok) { setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...u } as Task : t)); setEditingTask(null); } else { setToast(res.error || 'Update task failed'); } }}
           onToggleSubtask={(sid) => { if (!editingTask) return; toggleSubtaskLocal(editingTask.id, sid) }}
           onAddSubtask={(title) => { if (!editingTask) return; addSubtaskLocal(editingTask.id, title) }}
         />

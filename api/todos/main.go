@@ -122,9 +122,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
             json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "invalid json"})
             return
         }
-        idFloat, ok := body["id"].(float64)
-        if !ok { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing id"}); return }
-        id := int64(idFloat)
+        var id int64
+        switch v := body["id"].(type) {
+        case float64:
+            id = int64(v)
+        case string:
+            if parsed, err := strconv.ParseInt(v, 10, 64); err == nil { id = parsed }
+        }
+        if id == 0 { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing id"}); return }
         title, _ := body["title"].(string)
         desc, _ := body["description"].(string)
         date, _ := body["date"].(string)
