@@ -10,6 +10,15 @@ export const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleDateString('en-US', options);
 };
 
+export const dateToYMD = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+};
+
+export const todayYMD = (): string => dateToYMD(new Date());
+
 export const getDaysInMonth = (year: number, month: number): Date[] => {
   const date = new Date(year, month, 1);
   const days: Date[] = [];
@@ -34,17 +43,17 @@ export const generateCalendarGrid = (year: number, month: number): { date: strin
   for (let i = startDay - 1; i >= 0; i--) {
      const d = new Date(year, month - 1, prevMonthLastDay - i);
      grid.push({
-       date: d.toISOString().split('T')[0],
+       date: dateToYMD(d),
        isCurrentMonth: false,
        isToday: false
      });
   }
   
   // Current month
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayYMD();
   for (let i = 1; i <= daysInMonth; i++) {
     const d = new Date(year, month, i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = dateToYMD(d);
     grid.push({
       date: dateStr,
       isCurrentMonth: true,
@@ -57,7 +66,7 @@ export const generateCalendarGrid = (year: number, month: number): { date: strin
   for (let i = 1; i <= remainingCells; i++) {
      const d = new Date(year, month + 1, i);
      grid.push({
-       date: d.toISOString().split('T')[0],
+       date: dateToYMD(d),
        isCurrentMonth: false,
        isToday: false
      });

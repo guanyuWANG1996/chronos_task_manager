@@ -6,13 +6,13 @@ import { AuthForm } from './components/AuthForm';
 import { GROUPS, INITIAL_TASKS } from './constants';
 import { Task } from './types';
 import { Plus, Calendar as CalendarIcon, Layout, Github } from 'lucide-react';
-import { formatDate } from './lib/utils';
+import { formatDate, todayYMD } from './lib/utils';
 import { generateSubtasks } from './services/geminiService';
 import { getTodos, createTodo, toggleTodo, deleteTodo as apiDeleteTodo, getCalendar } from './services/api';
 
 const App: React.FC = () => {
   // Initialize with today's date
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(todayYMD());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [allMonthTasks, setAllMonthTasks] = useState<Task[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
