@@ -43,7 +43,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         log.Printf("login GetPool error: %v", err)
         w.WriteHeader(http.StatusInternalServerError)
-        _ = json.NewEncoder(w).Encode(loginResp{OK: false, Error: "db error"})
+        _ = json.NewEncoder(w).Encode(loginResp{OK: false, Error: err.Error()})
         return
     }
     var id int64

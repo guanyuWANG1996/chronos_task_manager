@@ -44,19 +44,19 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := context.Background()
 	pool, err := db.GetPool(ctx)
-	if err != nil {
-		log.Printf("register GetPool error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(jsonResp{OK: false, Error: "db error"})
-		return
-	}
+    if err != nil {
+        log.Printf("register GetPool error: %v", err)
+        w.WriteHeader(http.StatusInternalServerError)
+        _ = json.NewEncoder(w).Encode(jsonResp{OK: false, Error: err.Error()})
+        return
+    }
 	var exists bool
-	if err = pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)", req.Email).Scan(&exists); err != nil {
-		log.Printf("register query exists error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(jsonResp{OK: false, Error: "db error"})
-		return
-	}
+    if err = pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)", req.Email).Scan(&exists); err != nil {
+        log.Printf("register query exists error: %v", err)
+        w.WriteHeader(http.StatusInternalServerError)
+        _ = json.NewEncoder(w).Encode(jsonResp{OK: false, Error: err.Error()})
+        return
+    }
 	if exists {
 		w.WriteHeader(http.StatusConflict)
 		_ = json.NewEncoder(w).Encode(jsonResp{OK: false, Error: "email already registered"})
@@ -70,12 +70,12 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var id int64
-	if err := pool.QueryRow(ctx, "INSERT INTO users(email, password_hash) VALUES($1,$2) RETURNING id", req.Email, string(hash)).Scan(&id); err != nil {
-		log.Printf("register insert error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(jsonResp{OK: false, Error: "db error"})
-		return
-	}
+    if err := pool.QueryRow(ctx, "INSERT INTO users(email, password_hash) VALUES($1,$2) RETURNING id", req.Email, string(hash)).Scan(&id); err != nil {
+        log.Printf("register insert error: %v", err)
+        w.WriteHeader(http.StatusInternalServerError)
+        _ = json.NewEncoder(w).Encode(jsonResp{OK: false, Error: err.Error()})
+        return
+    }
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(jsonResp{OK: true, Data: map[string]interface{}{"id": id, "email": req.Email}})
 }

@@ -56,7 +56,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         rows, err := pool.Query(ctx, "SELECT id,title,COALESCE(description,''),to_char(date,'YYYY-MM-DD'),COALESCE(time,''),group_id,completed FROM todos WHERE user_id=$1 AND date=$2 ORDER BY id DESC", c.UserID, date)
         if err != nil {
             w.WriteHeader(http.StatusInternalServerError)
-            json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"})
+            json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()})
             return
         }
         defer rows.Close()
@@ -103,7 +103,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         err := pool.QueryRow(ctx, "INSERT INTO todos(user_id,title,description,date,time,group_id,completed) VALUES($1,$2,$3,$4,$5,$6,false) RETURNING id", c.UserID, payload.Title, payload.Description, payload.Date, payload.Time, payload.GroupID).Scan(&id)
         if err != nil {
             w.WriteHeader(http.StatusInternalServerError)
-            json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"})
+            json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()})
             return
         }
         if len(payload.Subtasks) > 0 {
@@ -136,7 +136,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         timeStr, _ := body["time"].(string)
         groupId, _ := body["groupId"].(string)
         _, err := pool.Exec(ctx, "UPDATE todos SET title=COALESCE(NULLIF($1,''),title), description=COALESCE($2,description), date=COALESCE(NULLIF($3,''),date), time=COALESCE(NULLIF($4,''),time), group_id=COALESCE(NULLIF($5,''),group_id) WHERE user_id=$6 AND id=$7", title, desc, date, timeStr, groupId, c.UserID, id)
-        if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"}); return }
+        if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()}); return }
         w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
     case http.MethodPatch:

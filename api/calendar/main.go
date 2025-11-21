@@ -41,7 +41,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     pool, err := db.GetPool(ctx)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
-        json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"})
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()})
         return
     }
 	rows, err := pool.Query(ctx, `
@@ -54,18 +54,18 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     `, c.UserID, month)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
-        json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"})
+        json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()})
         return
     }
 	defer rows.Close()
 	var res []daySummary
 	for rows.Next() {
 		var d daySummary
-		if err := rows.Scan(&d.Date, &d.Completed, &d.Pending); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "db error"})
-			return
-		}
+        if err := rows.Scan(&d.Date, &d.Completed, &d.Pending); err != nil {
+            w.WriteHeader(http.StatusInternalServerError)
+            json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": err.Error()})
+            return
+        }
 		d.HasTasks = d.Completed+d.Pending > 0
 		res = append(res, d)
 	}

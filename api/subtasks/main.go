@@ -17,7 +17,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     if err != nil { w.WriteHeader(http.StatusUnauthorized); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "unauthorized"}); return }
     ctx := context.Background()
     pool, err := db.GetPool(ctx)
-    if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"}); return }
+    if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()}); return }
 
     switch r.Method {
     case http.MethodPatch:
@@ -27,7 +27,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         if !ok { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing id"}); return }
         sid := int64(sidFloat)
         _, err := pool.Exec(ctx, "UPDATE subtasks SET completed = NOT completed WHERE id=$1 AND todo_id IN (SELECT id FROM todos WHERE user_id=$2)", sid, c.UserID)
-        if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"}); return }
+        if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()}); return }
         w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
     case http.MethodPost:
@@ -43,7 +43,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         if tid == 0 { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing todoId"}); return }
         title, _ := body["title"].(string)
         var sid int64
-        if err := pool.QueryRow(ctx, "INSERT INTO subtasks(todo_id,title,completed) VALUES($1,$2,false) RETURNING id", tid, title).Scan(&sid); err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"}); return }
+        if err := pool.QueryRow(ctx, "INSERT INTO subtasks(todo_id,title,completed) VALUES($1,$2,false) RETURNING id", tid, title).Scan(&sid); err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()}); return }
         w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "data": map[string]interface{}{"id": sid, "title": title, "completed": false}})
     case http.MethodDelete:
@@ -53,7 +53,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
         if !ok { w.WriteHeader(http.StatusBadRequest); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing id"}); return }
         sid := int64(sidFloat)
         _, err := pool.Exec(ctx, "DELETE FROM subtasks WHERE id=$1 AND todo_id IN (SELECT id FROM todos WHERE user_id=$2)", sid, c.UserID)
-        if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "db error"}); return }
+        if err != nil { w.WriteHeader(http.StatusInternalServerError); json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()}); return }
         w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
     default:
