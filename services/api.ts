@@ -7,7 +7,7 @@ export interface AuthResult {
 const json = (resp: Response) => resp.json();
 
 export async function register(email: string, password: string) {
-  const res = await fetch('/api/auth/register/main', {
+  const res = await fetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
@@ -19,7 +19,7 @@ export async function register(email: string, password: string) {
 }
 
 export async function login(email: string, password: string): Promise<AuthResult> {
-  const res = await fetch('/api/auth/login/main', {
+  const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
@@ -35,7 +35,7 @@ function authHeaders(token: string) {
 }
 
 export async function getTodos(date: string, token: string) {
-  const res = await fetch(`/api/todos/main?date=${encodeURIComponent(date)}`, {
+  const res = await fetch(`/api/todos?date=${encodeURIComponent(date)}`, {
     headers: authHeaders(token)
   });
   let data: any = null;
@@ -45,7 +45,7 @@ export async function getTodos(date: string, token: string) {
 }
 
 export async function createTodo(payload: { title: string; description?: string; date: string; time?: string; groupId: string; subtasks?: { title: string; completed?: boolean }[] }, token: string) {
-  const res = await fetch('/api/todos/main', {
+  const res = await fetch('/api/todos', {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(payload)
@@ -57,7 +57,7 @@ export async function createTodo(payload: { title: string; description?: string;
 }
 
 export async function toggleTodo(id: string, token: string) {
-  const res = await fetch('/api/todos/main', {
+  const res = await fetch('/api/todos', {
     method: 'PATCH',
     headers: authHeaders(token),
     body: JSON.stringify({ id })
@@ -69,7 +69,7 @@ export async function toggleTodo(id: string, token: string) {
 }
 
 export async function deleteTodo(id: string, token: string) {
-  const res = await fetch(`/api/todos/main?id=${encodeURIComponent(id)}`, {
+  const res = await fetch(`/api/todos?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: authHeaders(token)
   });
@@ -80,7 +80,7 @@ export async function deleteTodo(id: string, token: string) {
 }
 
 export async function getCalendar(month: string, token: string) {
-  const res = await fetch(`/api/calendar/main?month=${encodeURIComponent(month)}`, {
+  const res = await fetch(`/api/calendar?month=${encodeURIComponent(month)}`, {
     headers: authHeaders(token)
   });
   let data: any = null;
@@ -89,7 +89,7 @@ export async function getCalendar(month: string, token: string) {
   return data;
 }
 export async function updateTodo(payload: { id: string; title?: string; description?: string; date?: string; time?: string; groupId?: string }, token: string) {
-  const res = await fetch('/api/todos/main', {
+  const res = await fetch('/api/todos', {
     method: 'PUT',
     headers: authHeaders(token),
     body: JSON.stringify(payload)
@@ -101,7 +101,7 @@ export async function updateTodo(payload: { id: string; title?: string; descript
 }
 
 export async function toggleSubtask(id: string, token: string) {
-  const res = await fetch('/api/subtasks/main', {
+  const res = await fetch('/api/subtasks', {
     method: 'PATCH',
     headers: authHeaders(token),
     body: JSON.stringify({ id })
@@ -113,7 +113,7 @@ export async function toggleSubtask(id: string, token: string) {
 }
 
 export async function addSubtask(todoId: string, title: string, token: string) {
-  const res = await fetch('/api/subtasks/main', {
+  const res = await fetch('/api/subtasks', {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ todoId, title })
