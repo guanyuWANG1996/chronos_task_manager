@@ -31,7 +31,21 @@ const App: React.FC = () => {
 
   // Filter tasks for the selected date
   const dailyTasks = React.useMemo(() => {
-    return tasks.filter(t => t.date === selectedDate);
+    const list = tasks.filter(t => t.date === selectedDate);
+    const parseMinutes = (s?: string) => {
+      const m = /^([0-1]\d|2[0-3]):([0-5]\d)$/.exec(String(s || ''));
+      return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : null;
+    };
+    return list.slice().sort((a, b) => {
+      const ta = parseMinutes(a.time);
+      const tb = parseMinutes(b.time);
+      if (ta !== null && tb !== null) return ta - tb;
+      if (ta !== null && tb === null) return -1;
+      if (ta === null && tb !== null) return 1;
+      const ai = Number(a.id) || 0;
+      const bi = Number(b.id) || 0;
+      return bi - ai;
+    });
   }, [tasks, selectedDate]);
 
   // Handlers
