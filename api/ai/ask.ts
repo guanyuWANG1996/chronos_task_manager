@@ -1,12 +1,13 @@
 // 引入必要的模块
 import { OpenAI } from "openai";
 
-// 初始化 OpenAI 客户端
+// 初始化 OpenAI 客户端 (适配火山引擎方舟平台)
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // 从环境变量读取 API Key
+  apiKey: process.env.ARK_API_KEY, // 从环境变量读取 火山引擎 API Key
+  baseURL: "https://ark.cn-beijing.volces.com/api/v3", // 火山引擎方舟 API 地址
 });
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   console.log('askAi handler invoked', { method: req.method, url: req.url })
   
   // 1. 验证请求方法
@@ -15,7 +16,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // 2. 解析和验证请求体
-  let body: any = req.body;
+  let body = req.body;
   if (!body || typeof body !== 'object') {
     try {
       body = JSON.parse(req.body || '{}');
@@ -33,9 +34,9 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // 3. 调用 OpenAI API（切换为 GPT-3.5 Turbo）
+    // 3. 调用 火山引擎豆包模型 API
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // 使用 GPT-3.5 Turbo 模型
+      model: "ep-xxxxxxxxx", // 【重要】替换成你的火山引擎模型接入点 ID
       messages: [
         { role: "system", content: "You are a helpful assistant." }, // 系统角色设定
         { role: "user", content: userInputText } // 用户输入
@@ -54,7 +55,7 @@ export default async function handler(req: any, res: any) {
 
   } catch (error) {
     // 5. 错误处理
-    console.error('Error calling OpenAI API:', error);
+    console.error('Error calling Volcengine API:', error);
     
     let errorMessage = 'Failed to get response from AI';
     if (error instanceof Error) {
