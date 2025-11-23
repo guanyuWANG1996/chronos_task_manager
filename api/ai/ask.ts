@@ -7,7 +7,7 @@ const openai = new OpenAI({
   baseURL: "https://ark.cn-beijing.volces.com/api/v3", // 火山引擎方舟 API 地址
 });
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   console.log('askAi handler invoked', { method: req.method, url: req.url })
   
   // 1. 验证请求方法
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   try {
     // 3. 调用 火山引擎豆包模型 API
     const completion = await openai.chat.completions.create({
-      model: "ep-xxxxxxxxx", // 【重要】替换成你的火山引擎模型接入点 ID
+      model: "doubao-seed-1-6-lite-251015",
       messages: [
         { role: "system", content: "You are a helpful assistant." }, // 系统角色设定
         { role: "user", content: userInputText } // 用户输入
