@@ -68,25 +68,97 @@ const App: React.FC = () => {
     } else { setToast(res.error || 'Delete task failed'); }
   };
 
-  const askAi = async (text: string) => {
-    setAiStreaming(true);
-    setAiOutput('');
+  // const askAi = async (text: string) => {
+  //   setAiStreaming(true);
+  //   setAiOutput('');
+  //   try {
+  //     const resp = await fetch('/api/ai/ask', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         text,
+  //         referenceDate: todayYMD(),
+  //       })
+  //     });
+  //     let data: any = null;
+  //     try { data = await resp.json(); } catch {}
+  //     if (!resp.ok || !data?.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+  //     setAiOutput(String(data?.data ?? ''));
+  //   } catch (e: any) {
+  //     setToast(e?.message || 'AI request failed');
+  //   } finally {
+  //     setAiStreaming(false);
+  //   }
+  // };
+
+const askAi = async (text: string) => {
+  setAiStreaming(true);
+  setAiOutput('');
+  try {
+    const resp = await fetch('/api/ai/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // 新增传递 selectedDate（当前选中日期）
+      body: JSON.stringify({ 
+        text, 
+        referenceDate: selectedDate  // 格式：YYYY-MM-DD，作为相对时间的基准
+      })
+    });
+    let data: any = null;
+    try { data = await resp.json(); } catch {}
+    if (!resp.ok || !data?.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+    
+    // 解析 AI 返回的任务数据并自动创建任务（后续步骤见 2.）
+    let taskData;
     try {
-      const resp = await fetch('/api/ai/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      });
-      let data: any = null;
-      try { data = await resp.json(); } catch {}
-      if (!resp.ok || !data?.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
-      setAiOutput(String(data?.data ?? ''));
+      taskData = JSON.parse(data.data);
+    } catch (e) {
+      setToast('AI 响应格式错误，无法创建任务');
+      setAiOutput(data.data);
+      return;
+    }
+
+    // 验证并处理任务数据（补充之前实现的子任务状态、分组校验等逻辑）
+    if (!taskData.title) {
+      setToast('未解析到任务标题');
+      setAiOutput(JSON.stringify(taskData, null, 2));
+      return;
+    }
+
+    // 处理子任务：强制 completed 为 false
+    const processedSubtasks = (taskData.subtasks || []).map((st: any) => ({
+      title: st.title || '',
+      completed: false
+    }));
+
+    // 验证 groupId 合法性
+    const validGroups = ['personal', 'work', 'learning', 'health'];
+    const finalGroupId = validGroups.includes(taskData.groupId) 
+      ? taskData.groupId 
+      : 'personal';
+
+    // 使用 AI 返回的日期（若未返回则使用参考日期）
+    const finalDate = taskData.date || selectedDate;
+
+    // 自动创建任务
+    await addTask(
+      taskData.title,
+      taskData.description || '',
+      finalGroupId,
+      taskData.time,
+      processedSubtasks
+    );
+
+    setToast('任务已自动创建');
+    setAiOutput(`已创建任务：\n${taskData.title}\n日期：${finalDate}\n时间：${taskData.time || '未设置'}\n分组：${finalGroupId}`);
+
     } catch (e: any) {
-      setToast(e?.message || 'AI request failed');
+      setToast(e?.message || 'AI 请求失败');
     } finally {
       setAiStreaming(false);
     }
   };
+
   const cancelAi = () => { /* no-op after removing stream */ }
 
   const toggleSubtaskLocal = async (taskId: string, subtaskId: string) => {
