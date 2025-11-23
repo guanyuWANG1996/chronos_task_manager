@@ -80,7 +80,7 @@ const askAi = async (text: string) => {
       // 新增传递 selectedDate（当前选中日期）
       body: JSON.stringify({ 
         text, 
-        referenceDate: selectedDate  // 格式：YYYY-MM-DD，作为相对时间的基准
+        referenceDate: todayYMD()  // 格式：YYYY-MM-DD，作为相对时间的基准
       })
     });
     let data: any = null;
