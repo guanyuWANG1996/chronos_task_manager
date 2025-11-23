@@ -72,7 +72,17 @@ const App: React.FC = () => {
     setAiStreaming(true);
     setAiOutput('');
     try {
-      setAiOutput('Hello New World');
+      const resp = await fetch('/api/ai/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      let data: any = null;
+      try { data = await resp.json(); } catch {}
+      if (!resp.ok || !data?.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+      setAiOutput(String(data?.data ?? ''));
+    } catch (e: any) {
+      setToast(e?.message || 'AI request failed');
     } finally {
       setAiStreaming(false);
     }
