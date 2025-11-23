@@ -11,7 +11,7 @@ import { Plus, Calendar as CalendarIcon, Layout, Github } from 'lucide-react';
 import { formatDate, todayYMD } from './lib/utils';
 // remove ai parse; use streaming chat
 import { SmartTaskInput } from './components/SmartTaskInput';
-import { AIResponse } from './components/AIResponse';
+ 
 import { getTodos, createTodo, toggleTodo, deleteTodo as apiDeleteTodo, getCalendar, toggleSubtask, updateTodo, addSubtask } from './services/api';
 
 const App: React.FC = () => {
@@ -23,7 +23,6 @@ const App: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [toast, setToast] = useState<string>('');
   const [loadingAiId, setLoadingAiId] = useState<string | null>(null);
-  const [aiOutput, setAiOutput] = useState<string>('');
   const [aiStreaming, setAiStreaming] = useState<boolean>(false);
   const [smartCreating, setSmartCreating] = useState<boolean>(false);
   const [token, setToken] = useState<string | null>(null);
@@ -72,7 +71,6 @@ const App: React.FC = () => {
 
 const askAi = async (text: string) => {
   setAiStreaming(true);
-  setAiOutput('');
   try {
     const resp = await fetch('/api/ai/ask', {
       method: 'POST',
@@ -93,14 +91,14 @@ const askAi = async (text: string) => {
       taskData = JSON.parse(data.data);
     } catch (e) {
       setToast('AI 响应格式错误，无法创建任务');
-      setAiOutput(data.data);
+      setToast(String(data.data));
       return;
     }
 
     // 验证并处理任务数据（补充之前实现的子任务状态、分组校验等逻辑）
     if (!taskData.title) {
       setToast('未解析到任务标题');
-      setAiOutput(JSON.stringify(taskData, null, 2));
+      setToast(JSON.stringify(taskData, null, 2));
       return;
     }
 
@@ -130,8 +128,7 @@ const askAi = async (text: string) => {
       finalDate
     );
 
-    setToast('任务已自动创建');
-    setAiOutput(`已创建任务：\n${taskData.title}\n日期：${finalDate}\n时间：${taskData.time || '未设置'}\n分组：${finalGroupId}`);
+    setToast(`已创建任务：${taskData.title}｜日期：${finalDate}｜时间：${taskData.time || '未设置'}｜分组：${finalGroupId}`);
 
     } catch (e: any) {
       setToast(e?.message || 'AI 请求失败');
@@ -268,7 +265,7 @@ const askAi = async (text: string) => {
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         <SmartTaskInput onSubmit={askAi} loading={aiStreaming} />
-        <AIResponse text={aiOutput} streaming={aiStreaming} onCancel={cancelAi} />
+        
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left Column: Calendar & Summary */}

@@ -1,6 +1,6 @@
 import React from 'react'
 import { cn } from '../lib/utils'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 
 interface SmartTaskInputProps {
   onSubmit: (text: string) => void
@@ -23,9 +23,12 @@ export const SmartTaskInput: React.FC<SmartTaskInputProps> = ({ onSubmit, loadin
           value={value}
           onChange={(e)=>setValue(e.target.value)}
           onKeyDown={(e)=>{ if(e.key==='Enter') submit() }}
-          placeholder="Ask AI: e.g. 总结今天工作，帮我生成待办"
+          placeholder="Ask AI: e.g. 下周三健身，先热身，再进行主训练最后拉伸放松"
           className="flex-1 bg-transparent outline-none placeholder:text-zinc-500"
         />
+        {loading && (
+          <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
+        )}
       </div>
     </div>
   )
