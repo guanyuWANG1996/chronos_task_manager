@@ -36,9 +36,11 @@ const App: React.FC = () => {
   }, [tasks, selectedDate]);
 
   // Handlers
-  const addTask = async (title: string, description: string, groupId: string, time?: string, subtasks?: { title: string }[]) => {
+  const addTask = async (title: string, description: string, groupId: string, time?: string, subtasks?: { title: string }[], dateOverride?: string) => {
     if (!token) return;
-    const res = await createTodo({ title, description, date: selectedDate, time, groupId, subtasks }, token);
+    const payload = { title, description, date: dateOverride || selectedDate, time, groupId, subtasks } as { title: string; description?: string; date: string; time?: string; groupId: string; subtasks?: { title: string }[] };
+    console.log('addTask payload', payload);
+    const res = await createTodo(payload, token);
     if (res.ok) {
       const t = res.data as any;
       const newTask: Task = { id: String(t.id), title: t.title, description: t.description, date: t.date, time: t.time, groupId: t.groupId, completed: t.completed, subtasks: t.subtasks?.map((st:any)=>({ id: String(st.id), title: st.title, completed: st.completed })) || [] };
@@ -67,29 +69,6 @@ const App: React.FC = () => {
       setAllMonthTasks(prev => prev.filter(t => t.id !== id));
     } else { setToast(res.error || 'Delete task failed'); }
   };
-
-  // const askAi = async (text: string) => {
-  //   setAiStreaming(true);
-  //   setAiOutput('');
-  //   try {
-  //     const resp = await fetch('/api/ai/ask', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({
-  //         text,
-  //         referenceDate: todayYMD(),
-  //       })
-  //     });
-  //     let data: any = null;
-  //     try { data = await resp.json(); } catch {}
-  //     if (!resp.ok || !data?.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
-  //     setAiOutput(String(data?.data ?? ''));
-  //   } catch (e: any) {
-  //     setToast(e?.message || 'AI request failed');
-  //   } finally {
-  //     setAiStreaming(false);
-  //   }
-  // };
 
 const askAi = async (text: string) => {
   setAiStreaming(true);
@@ -139,6 +118,7 @@ const askAi = async (text: string) => {
 
     // 使用 AI 返回的日期（若未返回则使用参考日期）
     const finalDate = taskData.date || selectedDate;
+    console.log('askAi parsed', { taskData, selectedDate, finalDate });
 
     // 自动创建任务
     await addTask(
@@ -146,7 +126,8 @@ const askAi = async (text: string) => {
       taskData.description || '',
       finalGroupId,
       taskData.time,
-      processedSubtasks
+      processedSubtasks,
+      finalDate
     );
 
     setToast('任务已自动创建');
