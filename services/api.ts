@@ -123,3 +123,27 @@ export async function addSubtask(todoId: string, title: string, token: string) {
   if (!res.ok) return { ok: false, error: data?.error || `HTTP ${res.status}` };
   return data;
 }
+
+export async function deleteSubtask(id: string, token: string) {
+  const res = await fetch('/api/subtasks', {
+    method: 'DELETE',
+    headers: authHeaders(token),
+    body: JSON.stringify({ id })
+  });
+  let data: any = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) return { ok: false, error: data?.error || `HTTP ${res.status}` };
+  return data;
+}
+
+export async function updateSubtask(id: string, title: string, token: string) {
+  const res = await fetch('/api/subtasks', {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify({ id, title })
+  });
+  let data: any = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) return { ok: false, error: data?.error || `HTTP ${res.status}` };
+  return data;
+}

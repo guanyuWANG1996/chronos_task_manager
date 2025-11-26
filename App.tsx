@@ -12,7 +12,7 @@ import { formatDate, todayYMD } from './lib/utils';
 // remove ai parse; use streaming chat
 import { SmartTaskInput } from './components/SmartTaskInput';
  
-import { getTodos, createTodo, toggleTodo, deleteTodo as apiDeleteTodo, getCalendar, toggleSubtask, updateTodo, addSubtask } from './services/api';
+import { getTodos, createTodo, toggleTodo, deleteTodo as apiDeleteTodo, getCalendar, toggleSubtask, updateTodo, addSubtask, deleteSubtask, updateSubtask } from './services/api';
 
 const App: React.FC = () => {
   // Initialize with today's date
@@ -175,6 +175,28 @@ const askAi = async (text: string) => {
         setEditingTask(prev => prev && prev.id === taskId ? { ...prev, subtasks: [...(prev.subtasks||[]), newSt] } : prev);
       } else { setToast(res.error || 'Add subtask failed'); }
     } catch (e:any) { setToast(e?.message || 'Add subtask error'); }
+  };
+
+  const deleteSubtaskLocal = async (taskId: string, subtaskId: string) => {
+    if (!token) return;
+    try {
+      const res = await deleteSubtask(subtaskId, token);
+      if (res.ok) {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: (t.subtasks||[]).filter(st => st.id !== subtaskId) } : t));
+        setEditingTask(prev => prev && prev.id === taskId ? { ...prev, subtasks: (prev.subtasks||[]).filter(st => st.id !== subtaskId) } : prev);
+      } else { setToast(res.error || 'Delete subtask failed'); }
+    } catch (e:any) { setToast(e?.message || 'Delete subtask error'); }
+  };
+
+  const updateSubtaskLocal = async (taskId: string, subtaskId: string, title: string) => {
+    if (!token) return;
+    try {
+      const res = await updateSubtask(subtaskId, title, token);
+      if (res.ok) {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, subtasks: (t.subtasks||[]).map(st => st.id === subtaskId ? { ...st, title } : st) } : t));
+        setEditingTask(prev => prev && prev.id === taskId ? { ...prev, subtasks: (prev.subtasks||[]).map(st => st.id === subtaskId ? { ...st, title } : st) } : prev);
+      } else { setToast(res.error || 'Update subtask failed'); }
+    } catch (e:any) { setToast(e?.message || 'Update subtask error'); }
   };
 
   useEffect(() => {
@@ -358,7 +380,31 @@ const askAi = async (text: string) => {
           task={editingTask}
           groups={GROUPS}
           onClose={() => setEditingTask(null)}
-          onSave={async (u) => { if (!token || !editingTask) return; const res = await updateTodo({ id: editingTask.id, title: u.title, description: u.description, time: u.time, groupId: u.groupId }, token); if (res.ok) { setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...u } as Task : t)); setEditingTask(null); } else { setToast(res.error || 'Update task failed'); } }}
+          onSave={async (u) => {
+            if (!token || !editingTask) return;
+            const res = await updateTodo({ id: editingTask.id, title: u.title, description: u.description, time: u.time, groupId: u.groupId }, token);
+            if (!res.ok) { setToast(res.error || 'Update task failed'); return; }
+
+            const before: import('./types').SubTask[] = editingTask.subtasks || [];
+            const after: import('./types').SubTask[] = (u.subtasks ?? before);
+            const beforeMap = new Map<string, import('./types').SubTask>(before.map(st => [st.id, st]));
+            const afterMap = new Map<string, import('./types').SubTask>(after.map(st => [st.id, st]));
+
+            for (const st of before) {
+              if (!afterMap.has(st.id)) {
+                try { await deleteSubtask(st.id, token); } catch (e:any) { setToast(e?.message || 'Delete subtask error'); }
+              }
+            }
+            for (const st of after) {
+              const prev = beforeMap.get(st.id);
+              if (prev && prev.title !== st.title) {
+                try { await updateSubtask(st.id, st.title, token); } catch (e:any) { setToast(e?.message || 'Update subtask error'); }
+              }
+            }
+
+            setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, title: u.title ?? t.title, description: u.description ?? t.description, time: u.time ?? t.time, groupId: u.groupId ?? t.groupId, subtasks: after } : t));
+            setEditingTask(null);
+          }}
           onToggleSubtask={(sid) => { if (!editingTask) return; toggleSubtaskLocal(editingTask.id, sid) }}
           onAddSubtask={(title) => { if (!editingTask) return; addSubtaskLocal(editingTask.id, title) }}
         />

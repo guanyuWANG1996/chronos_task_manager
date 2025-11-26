@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Task } from '../types';
 import { TimePicker } from './TimePicker';
 import { cn } from '../lib/utils';
-import { X, Type, FileText, Clock, ListChecks, Check } from 'lucide-react';
+import { X, Type, FileText, Clock, ListChecks, Check, Trash2, Pencil } from 'lucide-react';
 import { Group } from '../types';
 
 interface TaskDetailModalProps {
@@ -20,10 +20,17 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, groups, 
   const [time, setTime] = useState(task.time || '');
   const [newSubtask, setNewSubtask] = useState('');
   const [groupId, setGroupId] = useState<string>(task.groupId);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const [localSubtasks, setLocalSubtasks] = useState(task.subtasks || []);
+
+  React.useEffect(() => {
+    setLocalSubtasks(task.subtasks || []);
+  }, [task.subtasks]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ id: task.id, title, description, time, groupId });
+    onSave({ id: task.id, title, description, time, groupId, subtasks: localSubtasks });
   };
 
   return (
@@ -49,10 +56,27 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, groups, 
           <div>
             <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-1.5"><ListChecks className="w-3 h-3" /> Subtasks</label>
             <div className="space-y-2">
-              {(task.subtasks || []).map(st => (
+              {(localSubtasks || []).map(st => (
                 <div key={st.id} className="flex items-center gap-2 text-xs text-zinc-400">
                   <button type="button" onClick={() => onToggleSubtask && onToggleSubtask(st.id)} className={cn("w-4 h-4 rounded-full border flex items-center justify-center", st.completed ? "bg-emerald-500 border-emerald-500 text-white" : "border-zinc-600")}>{st.completed && <Check className="w-3 h-3" />}</button>
-                  <span className={cn(st.completed && "line-through text-zinc-500")}>{st.title}</span>
+                  {editingId === st.id ? (
+                    <input
+                      value={editingValue}
+                      onChange={(e)=>{
+                        const v = e.target.value;
+                        setEditingValue(v);
+                        setLocalSubtasks(prev => prev.map(s => s.id === st.id ? { ...s, title: v } : s));
+                      }}
+                      onBlur={()=>{ setEditingId(null); setEditingValue(''); }}
+                      className="flex-1 bg-zinc-900/50 border border-zinc-800 rounded-xl px-2 py-1 text-xs text-white"
+                    />
+                  ) : (
+                    <>
+                      <span className={cn(st.completed && "line-through text-zinc-500")}>{st.title}</span>
+                      <button type="button" onClick={() => { setEditingId(st.id); setEditingValue(st.title); }} className="p-1 rounded-md hover:bg-zinc-800 text-zinc-400 hover:text-white"><Pencil className="w-3 h-3" /></button>
+                      <button type="button" onClick={() => setLocalSubtasks(prev => prev.filter(s => s.id !== st.id))} className="p-1 rounded-md hover:bg-red-500/10 text-zinc-400 hover:text-red-400"><Trash2 className="w-3 h-3" /></button>
+                    </>
+                  )}
                 </div>
               ))}
               <div className="flex gap-2">
