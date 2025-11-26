@@ -128,13 +128,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "invalid json"})
 			return
 		}
-		sidFloat, ok := body["id"].(float64)
-		if !ok {
+		var sid int64
+		switch v := body["id"].(type) {
+		case float64:
+			sid = int64(v)
+		case string:
+			if parsed, err := strconv.ParseInt(v, 10, 64); err == nil {
+				sid = parsed
+			}
+		}
+		if sid == 0 {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "missing id"})
 			return
 		}
-		sid := int64(sidFloat)
 		_, err := pool.Exec(ctx, "DELETE FROM subtasks WHERE id=$1 AND todo_id IN (SELECT id FROM todos WHERE user_id=$2)", sid, c.UserID)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

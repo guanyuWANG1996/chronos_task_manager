@@ -392,7 +392,7 @@ const askAi = async (text: string) => {
 
             for (const st of before) {
               if (!afterMap.has(st.id)) {
-                try { await deleteSubtask(st.id, token); } catch (e:any) { setToast(e?.message || 'Delete subtask error'); }
+                try { const r = await deleteSubtask(st.id, token); if (!r?.ok) { setToast(r?.error || 'Delete subtask failed'); } } catch (e:any) { setToast(e?.message || 'Delete subtask error'); }
               }
             }
             for (const st of after) {
