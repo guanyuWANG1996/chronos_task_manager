@@ -86,7 +86,7 @@ const App: React.FC = () => {
 const askAi = async (text: string) => {
   setAiStreaming(true);
   try {
-    const resp = await fetch('/api/ai/ask', {
+    const resp = await fetch('/chronos/api/ai/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // 新增传递 selectedDate（当前选中日期）

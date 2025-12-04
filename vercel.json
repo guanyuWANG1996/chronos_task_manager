@@ -3,10 +3,10 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/api/auth/login", "destination": "/api/auth/login/handler" },
-    { "source": "/api/auth/register", "destination": "/api/auth/register/handler" },
-    { "source": "/api/todos", "destination": "/api/todos/handler" },
-    { "source": "/api/subtasks", "destination": "/api/subtasks/handler" },
-    { "source": "/api/calendar", "destination": "/api/calendar/handler" }
+    { "source": "/chronos/api/auth/login", "destination": "/api/auth/login/handler" },
+    { "source": "/chronos/api/auth/register", "destination": "/api/auth/register/handler" },
+    { "source": "/chronos/api/todos", "destination": "/api/todos/handler" },
+    { "source": "/chronos/api/subtasks", "destination": "/api/subtasks/handler" },
+    { "source": "/chronos/api/calendar", "destination": "/api/calendar/handler" }
   ]
 }

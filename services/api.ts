@@ -35,7 +35,7 @@ function authHeaders(token: string) {
 }
 
 export async function getTodos(date: string, token: string) {
-  const res = await fetch(`/api/todos?date=${encodeURIComponent(date)}`, {
+  const res = await fetch(`/chronos/api/todos?date=${encodeURIComponent(date)}`, {
     headers: authHeaders(token)
   });
   let data: any = null;
