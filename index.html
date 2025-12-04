@@ -1,6 +1,25 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
   <head>
+    <!-- 第一步：运行时动态设置基础路径 -->
+    <script>
+      // 判断是否为国内 www 域名访问
+      const isCnDomain = window.location.host.includes('www.daisywill.cn');
+      // 动态设置全局基础路径：国内加 /chronos/，海外不加
+      window.BASE_PATH = isCnDomain ? '/chronos/' : '/';
+      
+      // 重写所有静态资源路径（解决相对路径在子目录下的解析问题）
+      document.addEventListener('DOMContentLoaded', () => {
+        // 重写 script 标签的 src
+        document.querySelectorAll('script[src^="./assets/"]').forEach(script => {
+          script.src = window.BASE_PATH + script.src.replace('./assets/', 'assets/');
+        });
+        // 重写 link 标签的 href（CSS）
+        document.querySelectorAll('link[href^="./assets/"]').forEach(link => {
+          link.href = window.BASE_PATH + link.href.replace('./assets/', 'assets/');
+        });
+      });
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chronos Task Manager</title>
